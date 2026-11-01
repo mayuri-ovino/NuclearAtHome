@@ -1,6 +1,6 @@
-# Radiation@Home — project rules
+# Nuclear@Home — project rules
 
-Radiation@Home is a BOINC volunteer computing project. Volunteers run molecular
+Nuclear@Home is a BOINC volunteer computing project. Volunteers run molecular
 dynamics (LAMMPS) simulations of collision cascades in fusion materials, then
 insert hydrogen/tritium into the damaged material to measure trapping. The server
 turns millions of results into an open database and an estimate of tritium
@@ -31,7 +31,8 @@ Every agent working in this repository (main session and subagents) follows thes
 - Never weaken a validation check to make a test pass.
 
 ## Code standards
-- Python 3.11+ (server, validator, stats, analysis), C++17 (BOINC wrapper),
+- Python 3.11+ (server, validator, stats, analysis), Rust stable (client-side
+  helper run by BOINC's stock `wrapper`; no custom C++ wrapper), Linux x86_64 clients only,
   JavaScript + Three.js (viewer). SQL: MariaDB for BOINC, PostgreSQL for science data.
 - Every code change ships with tests in `tests/` mirroring the source folder.
   Run `scripts/run-tests.sh` before reporting done.
@@ -56,7 +57,7 @@ Every agent working in this repository (main session and subagents) follows thes
 
 ## Folder map
 - `server/` work generator, assimilator, BOINC server config
-- `client/` BOINC wrapper, LAMMPS templates, graphics app
+- `client/` stock-wrapper job config, LAMMPS templates, Rust helper, graphics app
 - `validator/` result checks and host trust scoring
 - `stats/` credit, PPD, badges, stats aggregation, XML export, API
 - `viewer/` Three.js web viewer and dashboard front end

@@ -1,4 +1,4 @@
-# Radiation@Home — main agent brief
+# Nuclear@Home — main agent brief
 
 Start a Claude Code session in this folder and say:
 "Read PROMPT.md and CLAUDE.md, then begin Phase 1."
@@ -6,7 +6,7 @@ Start a Claude Code session in this folder and say:
 ---
 
 # ROLE
-You are the MAIN AGENT for "Radiation@Home": a senior engineer and computational
+You are the MAIN AGENT for "Nuclear@Home": a senior engineer and computational
 materials scientist helping me, a college student, build a BOINC volunteer computing
 project that simulates radiation damage in fusion reactor materials and connects that
 damage to how much tritium gets trapped in reactor walls. Act as both scientific advisor
@@ -25,8 +25,9 @@ into an open database and an estimate of tritium retained in reactor walls.
 - BOINC server (official Docker image) on Linux
 - Science code: LAMMPS (minimal build: MANYBODY, ML potential packages as needed,
   electronic stopping / two-temperature model support), checkpoint/restart enabled
-- Wrapper: C++17 using the BOINC API (progress, checkpointing, suspend/resume,
-  graphics hooks), with an optional Docker/VirtualBox app version
+- Wrapper: BOINC's stock `wrapper` (job.xml) runs LAMMPS plus a small Rust helper
+  (progress, TPF, result packaging, checksums). No custom C++ wrapper.
+- Clients: Linux x86_64 only for the alpha (decided by the human, Phase 1)
 - Optional GPU app (LAMMPS GPU or KOKKOS)
 - Server-side: Python (work generator, validator, assimilator, stats)
 - Databases: MariaDB (BOINC) + PostgreSQL or Parquet (science results)

@@ -18,6 +18,7 @@ stats live in PostgreSQL.
 | `user_daily`, `team_daily` | id, day, points, ppd, rank |
 | `badges` | user_id, badge_id, awarded_at |
 | `discoveries` | discovery_id, wu_id, user_id, description, confirmed_by, approved_at |
+| `canaries` | wu_id, reference_run_id, created_at. SERVER-ONLY: never joined into any API response, export, or file sent to clients. The API's PostgreSQL role has no SELECT on it; only the validator and work-generator roles can read it |
 | `retention_estimates` | run_id, material, wall_temp_k, time_s, retained_per_m2, lower, upper, assumptions_version |
 
 ## Aggregation jobs

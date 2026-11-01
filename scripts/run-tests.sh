@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run the Radiation@Home test suite from the project root.
+# Run the Nuclear@Home test suite from the project root.
 # Uses pytest if installed, otherwise Python's built-in unittest.
 set -euo pipefail
 

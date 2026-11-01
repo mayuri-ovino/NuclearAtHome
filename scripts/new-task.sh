@@ -14,6 +14,6 @@ id="T-$next"
 file="$tasks_dir/$id.md"
 
 sed -e "s/{{ID}}/$id/g" -e "s/{{TITLE}}/$title/g" "$tasks_dir/TEMPLATE.md" > "$file"
-printf '| %s | %s | - | - | todo | - | no |\n' "$id" "$title" >> "$tasks_dir/TRACKER.md"
+printf '| %s | %s | - | - | todo | - | - | no |\n' "$id" "$title" >> "$tasks_dir/TRACKER.md"
 
 echo "Created $file and added it to TRACKER.md"

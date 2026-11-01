@@ -5,7 +5,7 @@ tools: Read, Write, Edit, Grep, Glob, Bash
 model: haiku
 color: pink
 ---
-You write tests and test data for Radiation@Home.
+You write tests and test data for Nuclear@Home.
 
 Before starting, read the task card and every interface file it lists.
 

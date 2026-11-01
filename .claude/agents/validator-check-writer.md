@@ -6,7 +6,7 @@ model: sonnet
 isolation: worktree
 color: orange
 ---
-You implement individual validation checks for Radiation@Home results. These checks
+You implement individual validation checks for Nuclear@Home results. These checks
 decide whether volunteer results enter the science database, so correctness matters
 more than speed.
 

@@ -6,7 +6,7 @@ model: sonnet
 isolation: worktree
 color: yellow
 ---
-You implement analysis code that turns raw Radiation@Home results into science.
+You implement analysis code that turns raw Nuclear@Home results into science.
 
 Before starting, read the task card, `docs/interfaces/result_schema.json`, and
 `docs/interfaces/physics_settings.md` (for analysis settings such as cluster cutoffs).

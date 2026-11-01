@@ -1,6 +1,6 @@
-# Radiation@Home — Claude Code environment
+# Nuclear@Home — Claude Code environment
 
-A ready-made Claude Code project for building **Radiation@Home**, a BOINC volunteer
+A ready-made Claude Code project for building **Nuclear@Home**, a BOINC volunteer
 computing project that simulates radiation damage in fusion materials and estimates
 how much tritium gets trapped in reactor walls.
 
@@ -12,7 +12,7 @@ that with you, phase by phase.
 ## What's inside
 
 ```
-radiation-at-home/
+nuclear-at-home/
 ├── CLAUDE.md                     Rules every agent follows
 ├── PROMPT.md                     The main agent's full brief
 ├── README.md                     This file
@@ -39,7 +39,7 @@ radiation-at-home/
    ```bash
    git init
    git add .
-   git commit -m "Radiation@Home Claude Code environment"
+   git commit -m "Nuclear@Home Claude Code environment"
    ```
 4. **Check the tests run:**
    ```bash
@@ -86,9 +86,18 @@ writes task cards, delegates, reviews, and merges.
 ## Frozen interfaces
 
 Files in `docs/interfaces/` start as **DRAFT**. In Phase 2 the main agent finalizes
-them and marks them **FROZEN**. After that, the hook in `scripts/guard_frozen.py`
-blocks any agent from editing them. To change a frozen file, edit its status back to
-DRAFT yourself, outside Claude Code, and commit.
+them, you approve, and you freeze each one outside Claude Code:
+
+```bash
+# set the file's status line to FROZEN, then:
+sha256sum docs/interfaces/<file> >> docs/interfaces/FROZEN.sha256
+git commit -am "Freeze <file>"
+```
+
+The hook in `scripts/guard_frozen.py` then blocks agent Edit/Write on frozen files, and
+after every agent Bash command it re-checks all frozen files against the manifest. The
+test suite runs the same check, which catches changes arriving through merges. To change a
+frozen file, set its status back to DRAFT, delete its manifest line, and commit.
 
 ## Things only you should do
 

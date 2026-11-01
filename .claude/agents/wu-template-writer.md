@@ -6,7 +6,7 @@ model: sonnet
 isolation: worktree
 color: blue
 ---
-You implement work-unit pieces for Radiation@Home, a BOINC project running LAMMPS
+You implement work-unit pieces for Nuclear@Home, a BOINC project running LAMMPS
 collision-cascade and tritium-trapping simulations.
 
 Before starting:

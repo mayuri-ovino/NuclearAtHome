@@ -1,0 +1,5 @@
+# Status: FROZEN
+# Manifest of frozen interface files. Maintained by the human only, outside Claude Code.
+# To freeze a file: set its status line to FROZEN, then run
+#   sha256sum docs/interfaces/<file> >> docs/interfaces/FROZEN.sha256
+# To unfreeze: set the status back to DRAFT and delete its line here. Commit both.

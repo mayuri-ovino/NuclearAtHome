@@ -1,9 +1,9 @@
 {
   "_status": "DRAFT",
-  "_note": "Main agent finalizes in Phase 2, then sets _status to FROZEN. Values in enums marked TODO are placeholders.",
+  "_note": "Main agent finalizes in Phase 2, then sets _status to FROZEN. Values in enums marked TODO are placeholders. Canary status is never part of a WU; it lives only in the server-side canaries table (stats_spec.md).",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "radiation-at-home/workunit.schema.json",
-  "title": "Radiation@Home work unit",
+  "$id": "nuclear-at-home/workunit.schema.json",
+  "title": "Nuclear@Home work unit",
   "oneOf": [
     { "$ref": "#/$defs/cascade_wu" },
     { "$ref": "#/$defs/trapping_wu" }
@@ -12,6 +12,7 @@
     "common": {
       "type": "object",
       "required": ["schema_version", "wu_id", "campaign_id", "wu_type", "app_version_min", "random_seed", "size_tier", "points"],
+      "not": { "required": ["is_canary"] },
       "properties": {
         "schema_version": { "type": "string", "const": "0.1.0" },
         "wu_id": { "type": "string", "pattern": "^[A-Z]{2}-[0-9]{4}-[0-9]{8}$" },
@@ -20,11 +21,6 @@
         "app_version_min": { "type": "string" },
         "random_seed": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
         "size_tier": { "type": "string", "enum": ["small", "large", "gpu"] },
-        "is_canary": {
-          "type": "boolean",
-          "default": false,
-          "description": "SERVER-SIDE ONLY. Must be stripped before the WU is sent to clients."
-        },
         "points": {
           "type": "number",
           "minimum": 0,

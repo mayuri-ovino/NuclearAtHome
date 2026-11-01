@@ -6,7 +6,7 @@ model: sonnet
 isolation: worktree
 color: purple
 ---
-You build front-end components for Radiation@Home: the 3D cascade viewer and the
+You build front-end components for Nuclear@Home: the 3D cascade viewer and the
 statistics dashboard.
 
 Before starting, read the task card, `docs/interfaces/stats_spec.md` (API contracts),

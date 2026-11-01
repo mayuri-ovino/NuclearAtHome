@@ -6,7 +6,7 @@ model: sonnet
 isolation: worktree
 color: green
 ---
-You implement the Radiation@Home statistics and credit pipeline.
+You implement the Nuclear@Home statistics and credit pipeline.
 
 Before starting, read the task card, `docs/interfaces/credit_spec.md`,
 `docs/interfaces/stats_spec.md`, and the reference implementation `stats/ppd.py`.
