@@ -1,0 +1,103 @@
+{
+  "_status": "DRAFT",
+  "_note": "What the client returns. Main agent finalizes in Phase 2, then sets _status to FROZEN.",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "radiation-at-home/result.schema.json",
+  "title": "Radiation@Home result",
+  "type": "object",
+  "required": ["schema_version", "wu_id", "wu_type", "app_version", "run", "integrity"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "0.1.0" },
+    "wu_id": { "type": "string" },
+    "wu_type": { "type": "string", "enum": ["cascade", "trapping"] },
+    "app_version": { "type": "string" },
+    "platform": { "type": "string", "description": "e.g. x86_64-linux, x86_64-windows, arm64-macos, cuda" },
+
+    "run": {
+      "type": "object",
+      "required": ["md_steps_completed", "simulated_time_ps", "n_atoms", "checkpoints_written", "restarts", "tpf_samples_s"],
+      "properties": {
+        "md_steps_completed": { "type": "integer", "minimum": 0 },
+        "simulated_time_ps": { "type": "number", "minimum": 0 },
+        "n_atoms": { "type": "integer", "minimum": 1 },
+        "checkpoints_written": { "type": "integer", "minimum": 0 },
+        "restarts": { "type": "integer", "minimum": 0 },
+        "tpf_samples_s": {
+          "type": "array", "items": { "type": "number", "exclusiveMinimum": 0 },
+          "description": "Wall-clock seconds per 1% of progress. Informational only; never used for points."
+        }
+      }
+    },
+
+    "energy_log": {
+      "type": "array",
+      "description": "Sampled total energy for conservation checks.",
+      "items": {
+        "type": "object",
+        "required": ["step", "time_ps", "total_energy_ev", "thermostat_energy_ev", "electronic_loss_ev"],
+        "properties": {
+          "step": { "type": "integer" },
+          "time_ps": { "type": "number" },
+          "total_energy_ev": { "type": "number" },
+          "thermostat_energy_ev": { "type": "number", "description": "Cumulative energy removed by the edge thermostat." },
+          "electronic_loss_ev": { "type": "number", "description": "Cumulative energy lost to electronic stopping/coupling." }
+        }
+      }
+    },
+
+    "cascade": {
+      "type": "object",
+      "description": "Present when wu_type = cascade.",
+      "properties": {
+        "n_vacancies": { "type": "integer", "minimum": 0 },
+        "n_interstitials": { "type": "integer", "minimum": 0 },
+        "peak_displaced_atoms": { "type": "integer", "minimum": 0 },
+        "defect_count_history": {
+          "type": "array",
+          "items": { "type": "array", "items": { "type": "number" }, "minItems": 2, "maxItems": 2 },
+          "description": "[time_ps, n_frenkel_pairs] pairs, used to confirm stabilization."
+        },
+        "cluster_sizes_vac": { "type": "array", "items": { "type": "integer", "minimum": 1 } },
+        "cluster_sizes_int": { "type": "array", "items": { "type": "integer", "minimum": 1 } },
+        "defect_file": { "type": "string", "description": "Compressed file with defect positions and types." },
+        "snapshot_files": { "type": "array", "items": { "type": "string" }, "description": "Sparse snapshots for the 3D viewer." },
+        "final_config_file": { "type": "string", "description": "Damaged configuration, used as input to trapping WUs." }
+      }
+    },
+
+    "trapping": {
+      "type": "object",
+      "description": "Present when wu_type = trapping.",
+      "properties": {
+        "n_inserted": { "type": "integer", "minimum": 0 },
+        "n_trapped_end": { "type": "integer", "minimum": 0 },
+        "n_free_end": { "type": "integer", "minimum": 0 },
+        "n_desorbed": { "type": "integer", "minimum": 0 },
+        "trap_sites": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["site_type", "n_occupants"],
+            "properties": {
+              "site_type": { "type": "string", "enum": ["vacancy", "vacancy_cluster", "interstitial_cluster", "solute", "other"] },
+              "cluster_size": { "type": "integer" },
+              "n_occupants": { "type": "integer", "minimum": 0 },
+              "binding_energy_ev": { "type": ["number", "null"] }
+            }
+          }
+        },
+        "trap_file": { "type": "string" }
+      }
+    },
+
+    "integrity": {
+      "type": "object",
+      "required": ["final_rng_state_hash", "output_sha256", "input_sha256"],
+      "properties": {
+        "final_rng_state_hash": { "type": "string" },
+        "output_sha256": { "type": "object", "additionalProperties": { "type": "string" }, "description": "filename -> sha256" },
+        "input_sha256": { "type": "string" }
+      }
+    }
+  }
+}

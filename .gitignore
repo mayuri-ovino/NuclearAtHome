@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# Build outputs
+build/
+*.o
+*.so
+*.exe
+
+# Simulation data (large; store results outside git)
+*.dump
+*.restart
+*.lammpstrj
+data/raw/
+
+# Secrets — the code-signing private key must NEVER be here
+secrets/
+*.priv
+*_private_key*
+.env
+
+# Claude Code local files
+.claude/settings.local.json
+.claude/agent-memory-local/
+
+# OS
+.DS_Store
+Thumbs.db

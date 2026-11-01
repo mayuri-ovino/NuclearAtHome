@@ -1,0 +1,153 @@
+{
+  "_status": "DRAFT",
+  "_note": "Main agent finalizes in Phase 2, then sets _status to FROZEN. Values in enums marked TODO are placeholders.",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "radiation-at-home/workunit.schema.json",
+  "title": "Radiation@Home work unit",
+  "oneOf": [
+    { "$ref": "#/$defs/cascade_wu" },
+    { "$ref": "#/$defs/trapping_wu" }
+  ],
+  "$defs": {
+    "common": {
+      "type": "object",
+      "required": ["schema_version", "wu_id", "campaign_id", "wu_type", "app_version_min", "random_seed", "size_tier", "points"],
+      "properties": {
+        "schema_version": { "type": "string", "const": "0.1.0" },
+        "wu_id": { "type": "string", "pattern": "^[A-Z]{2}-[0-9]{4}-[0-9]{8}$" },
+        "campaign_id": { "type": "string" },
+        "wu_type": { "type": "string", "enum": ["cascade", "trapping"] },
+        "app_version_min": { "type": "string" },
+        "random_seed": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+        "size_tier": { "type": "string", "enum": ["small", "large", "gpu"] },
+        "is_canary": {
+          "type": "boolean",
+          "default": false,
+          "description": "SERVER-SIDE ONLY. Must be stripped before the WU is sent to clients."
+        },
+        "points": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Base points, computed on the server per credit_spec.md. Clients never set this."
+        },
+        "checkpoint_interval_steps": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "material": {
+      "type": "object",
+      "required": ["family", "composition", "potential_id"],
+      "properties": {
+        "family": { "type": "string", "enum": ["W", "W-Re", "RAFM", "V-Cr-Ti", "ODS"] },
+        "composition": {
+          "type": "object",
+          "description": "Element symbol -> atomic fraction. Fractions must sum to 1.",
+          "additionalProperties": { "type": "number", "minimum": 0, "maximum": 1 }
+        },
+        "potential_id": {
+          "type": "string",
+          "description": "Key into the potential table in physics_settings.md."
+        },
+        "structure_seed": {
+          "type": "integer",
+          "description": "Seed for random placement of alloying atoms."
+        }
+      }
+    },
+    "cascade_wu": {
+      "allOf": [
+        { "$ref": "#/$defs/common" },
+        {
+          "type": "object",
+          "required": ["wu_type", "material", "temperature_k", "pka", "box", "electronic", "initial_state"],
+          "properties": {
+            "wu_type": { "const": "cascade" },
+            "material": { "$ref": "#/$defs/material" },
+            "temperature_k": { "type": "number", "minimum": 0 },
+            "pka": {
+              "type": "object",
+              "required": ["energy_ev", "direction", "element"],
+              "properties": {
+                "energy_ev": { "type": "number", "exclusiveMinimum": 0 },
+                "direction": {
+                  "type": "array", "items": { "type": "number" }, "minItems": 3, "maxItems": 3,
+                  "description": "Unit vector; normalized by the client."
+                },
+                "element": { "type": "string" },
+                "sampled_from_spectrum_id": { "type": "string" }
+              }
+            },
+            "box": {
+              "type": "object",
+              "required": ["unit_cells", "lattice"],
+              "properties": {
+                "unit_cells": { "type": "array", "items": { "type": "integer", "minimum": 1 }, "minItems": 3, "maxItems": 3 },
+                "lattice": { "type": "string", "enum": ["bcc", "fcc"] },
+                "n_atoms_expected": { "type": "integer" }
+              }
+            },
+            "electronic": {
+              "type": "object",
+              "required": ["stopping_model", "eph_coupling"],
+              "properties": {
+                "stopping_model": { "type": "string", "description": "Key into physics_settings.md" },
+                "eph_coupling": { "type": "string", "description": "'none' or a key into physics_settings.md" }
+              }
+            },
+            "initial_state": {
+              "type": "object",
+              "required": ["kind"],
+              "properties": {
+                "kind": { "type": "string", "enum": ["pristine", "predamaged", "with_gas"] },
+                "source_wu_id": { "type": "string" },
+                "gas": {
+                  "type": "object",
+                  "properties": {
+                    "species": { "type": "string", "enum": ["H", "T", "He"] },
+                    "atomic_fraction": { "type": "number", "minimum": 0 }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "trapping_wu": {
+      "allOf": [
+        { "$ref": "#/$defs/common" },
+        {
+          "type": "object",
+          "required": ["wu_type", "parent_cascade_wu_id", "parent_config_file", "species", "temperature_k", "insertion", "anneal", "binding_energy"],
+          "properties": {
+            "wu_type": { "const": "trapping" },
+            "parent_cascade_wu_id": { "type": "string" },
+            "parent_config_file": { "type": "string", "description": "Validated damaged configuration from stage A." },
+            "species": { "type": "string", "enum": ["H", "T"], "description": "T uses tritium mass in dynamics." },
+            "temperature_k": { "type": "number", "minimum": 0 },
+            "insertion": {
+              "type": "object",
+              "required": ["n_atoms", "placement"],
+              "properties": {
+                "n_atoms": { "type": "integer", "minimum": 1 },
+                "placement": { "type": "string", "enum": ["random_interstitial", "near_defects", "uniform_grid"] }
+              }
+            },
+            "anneal": {
+              "type": "object",
+              "required": ["time_ps"],
+              "properties": { "time_ps": { "type": "number", "exclusiveMinimum": 0 } }
+            },
+            "binding_energy": {
+              "type": "object",
+              "required": ["method", "max_sites"],
+              "properties": {
+                "method": { "type": "string", "enum": ["relaxation", "neb"] },
+                "max_sites": { "type": "integer", "minimum": 0 }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

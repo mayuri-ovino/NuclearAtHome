@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bash scripts/run-tests.sh)",
+      "Bash(bash scripts/new-task.sh *)",
+      "Bash(python3 -m pytest *)",
+      "Bash(python3 -m unittest *)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git log *)"
+    ],
+    "deny": [
+      "Read(./secrets/**)",
+      "Read(./**/*.priv)",
+      "Read(./**/*private_key*)",
+      "Read(./.env)",
+      "Bash(git push *)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/guard_frozen.py\""
+          }
+        ]
+      }
+    ]
+  }
+}
