@@ -1,10 +1,11 @@
 <!-- BOINC stock wrapper job description for the OpenCL GPU app version (core 0xa2).
      Same input as the CPU version; -sf gpu -pk gpu 1 moves the EAM potential (pair eam/fs/gpu)
-     onto the GPU, everything else stays on the CPU. -->
+     onto the GPU, everything else stays on the CPU. "neigh no": neighbour lists on the CPU, because
+     GPU-built lists crash (OpenCL -9999) in the dense cascade core. Costs ~13 GB host RAM at 250k atoms. -->
 <job_desc>
   <task>
     <application>lmp</application>
-    <command_line>-in in.cascade.lmp -log none -screen none -sf gpu -pk gpu 1</command_line>
+    <command_line>-in in.cascade.lmp -log none -screen none -sf gpu -pk gpu 1 neigh no</command_line>
     <checkpoint_filename>checkpoint.state</checkpoint_filename>
     <fraction_done_filename>progress.txt</fraction_done_filename>
   </task>
