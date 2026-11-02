@@ -1,4 +1,7 @@
-<!-- App version layout for BOINC's stock wrapper (x86_64-pc-linux-gnu).
+<!-- App version layout for BOINC's stock wrapper (x86_64-pc-linux-gnu), CPU core 0xa1.
+     GPU core 0xa2: same layout in a directory named x86_64-pc-linux-gnu__opencl_nvidia_101 (and
+     __opencl_ati_101 / __opencl_intel_gpu_102), with lmp_nah_stable_29Aug2024_opencl as lmp and
+     client/job_opencl.xml as job.xml.
      Files in the version directory: the wrapper binary, lmp (static LAMMPS from
      client/build_lammps.sh), job.xml. Each file is signed on the offline machine. -->
 <version>

@@ -9,7 +9,7 @@ Nothing left. The SRIM stopping table, the exact Juslin–Wirth potential and th
 ## 2. Blocks deploying anywhere
 
 4. **Agent, later:** the full JW Table 3/4 reproduction (⟨110⟩ dumbbell, octahedral site, averaged TDE). The ⟨111⟩ dumbbell already matches: 9.52 vs 9.50 eV. Done this round: both re-reviews applied, and BOINC script macros and exit codes checked against the BOINC source.
-5. **Agent + you: staging BOINC server.** Install the wrappers from `server/boinc/bin/` and run the SQL against real PostgreSQL and MariaDB. The macros and exit 3 = retry were checked in the BOINC source; still check adaptive replication and the CPU-limit behaviour (SIGXCPU counts as invalid). Size the server for up to 4 GB per concurrent validator.
+5. **Agent + you: staging BOINC server.** Also build the team join codes there (a PHP page in BOINC's web code; it needs BOINC to test). Install the wrappers from `server/boinc/bin/` and run the SQL against real PostgreSQL and MariaDB. The macros and exit 3 = retry were checked in the BOINC source; still check adaptive replication and the CPU-limit behaviour (SIGXCPU counts as invalid). Size the server for up to 4 GB per concurrent validator.
 
 ## 3. Needed for good science (not blocking the alpha)
 
@@ -27,7 +27,8 @@ Nothing left. The SRIM stopping table, the exact Juslin–Wirth potential and th
 
 ## 5. After the alpha
 
-14. Trapping stage, retention model, two-temperature model, screensaver, speed bonus, GPU app version.
+14. Trapping stage, retention model, two-temperature model, screensaver, speed bonus.
+15. GPU: the OpenCL build works (core 0xa2, `bash client/build_lammps.sh <dir> gpu`). Still to do on staging: register the opencl_* app versions in BOINC, calibrate GPU work units, test on AMD and Intel GPUs. CUDA and HIP builds are not started.
 
 ## Done
 

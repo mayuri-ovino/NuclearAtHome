@@ -1,0 +1,11 @@
+<!-- BOINC stock wrapper job description for the OpenCL GPU app version (core 0xa2).
+     Same input as the CPU version; -sf gpu -pk gpu 1 moves the EAM potential (pair eam/fs/gpu)
+     onto the GPU, everything else stays on the CPU. -->
+<job_desc>
+  <task>
+    <application>lmp</application>
+    <command_line>-in in.cascade.lmp -log none -screen none -sf gpu -pk gpu 1</command_line>
+    <checkpoint_filename>checkpoint.state</checkpoint_filename>
+    <fraction_done_filename>progress.txt</fraction_done_filename>
+  </task>
+</job_desc>
