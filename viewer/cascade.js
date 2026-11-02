@@ -148,7 +148,7 @@ function frameCamera() {
     const box = new THREE.Box3();
     for (const f of frames) for (const r of f.rows) box.expandByPoint(new THREE.Vector3(r[f.idx.x], r[f.idx.y], r[f.idx.z]));
     const center = box.getCenter(new THREE.Vector3());
-    const size = Math.max(...box.getSize(new THREE.Vector3()).toArray(), 10);
+    const size = Math.max(...box.getSize(new THREE.Vector3()).toArray(), 40)  // a cascade spans ~30-50 Å;
     const d = size * 1.4;
     // Ground grid just below the cascade, to give a sense of space and scale (1 cell = 5 Å).
     if (grid) scene.remove(grid);
