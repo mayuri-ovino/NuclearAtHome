@@ -24,6 +24,8 @@ install_version x86_64-pc-linux-gnu__opencl_nvidia_101 version_opencl.xml job_op
   wrapper_26018_x86_64-pc-linux-gnu lmp_nah_stable_29Aug2024_opencl_r2
 install_version windows_x86_64 version_windows.xml job.xml job_nah_cascade_1.xml \
   wrapper_26019_windows_x86_64.exe lmp_nah_stable_29Aug2024_windows.exe
+install_version windows_x86_64__opencl_nvidia_101 version_windows_opencl.xml job_opencl.xml job_nah_cascade_opencl_3.xml \
+  wrapper_26019_windows_x86_64.exe lmp_nah_stable_29Aug2024_windows_opencl.exe
 cp "$src/server/boinc/nah_cascade_in" "$src/server/boinc/nah_cascade_out" templates/
 cp "$src/server/boinc/bin/"nah_* bin/
 python3 "$src/server/staging/add_app.py" .

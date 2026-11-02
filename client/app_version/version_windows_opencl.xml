@@ -1,0 +1,19 @@
+<!-- GPU app version for Windows x86_64 (core 0xa2, BOINC plan class opencl_nvidia_101): stock wrapper
+     26019 + LAMMPS GPU package over OpenCL from client/build_lammps_windows.sh <dir> gpu, and the same
+     job file as the Linux GPU version. Installed by server/staging/install_app.sh. -->
+<version>
+  <file>
+    <physical_name>wrapper_26019_windows_x86_64.exe</physical_name>
+    <main_program/>
+    <gzip/>
+  </file>
+  <file>
+    <physical_name>lmp_nah_stable_29Aug2024_windows_opencl.exe</physical_name>
+    <logical_name>lmp</logical_name>
+    <gzip/>
+  </file>
+  <file>
+    <physical_name>job_nah_cascade_opencl_3.xml</physical_name>
+    <logical_name>job.xml</logical_name>
+  </file>
+</version>
