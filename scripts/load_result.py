@@ -38,6 +38,20 @@ def elapsed_seconds(run: Path) -> float:
     return max(times) - min(times)
 
 
+def this_machine() -> tuple[str | None, str | None, str | None, int]:
+    """CPU model, GPU names, OS and CPU count of the computer running this script (no hostname)."""
+    import os
+    import platform
+    import subprocess
+    cpu = next((line.split(":", 1)[1].strip() for line in open("/proc/cpuinfo") if line.startswith("model name")), None)
+    try:
+        gpu = subprocess.run(["nvidia-smi", "--query-gpu=name", "--format=csv,noheader"], capture_output=True,
+                             text=True, timeout=10).stdout.strip().replace("\n", ", ") or None
+    except (OSError, subprocess.TimeoutExpired):
+        gpu = None
+    return cpu, gpu, platform.freedesktop_os_release().get("PRETTY_NAME"), os.cpu_count() or 0
+
+
 def main(run: Path, host_id: int, user_id: int) -> int:
     settings = load()
     wu = json.loads((run / "wu.json").read_text())
@@ -62,6 +76,11 @@ def main(run: Path, host_id: int, user_id: int) -> int:
                     "VALUES (%s, %s, %s, %s, 'done') ON CONFLICT DO NOTHING",
                     (wu["wu_id"], wu["pka"]["energy_ev"], wu["temperature_k"], wu["points"]))
         cur.execute("INSERT INTO privacy VALUES (%s, true, true) ON CONFLICT DO NOTHING", (user_id,))
+        # What BOINC's host and result tables would hold for this run (stats/jobs.py syncs those in production).
+        cur.execute("INSERT INTO hosts VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING",
+                    (host_id, user_id, *this_machine()))
+        cur.execute("INSERT INTO host_results VALUES (%s, %s, %s, '', 'valid', %s, %s) ON CONFLICT DO NOTHING",
+                    (f"{wu['wu_id']}_0", host_id, wu["wu_id"], now, now))
     store_result(settings, wu["wu_id"], wu, record, meta, paths)
     with db.pg() as conn, conn.cursor() as cur:  # refresh the stats tables the site reads
         hourly(cur, now.date())

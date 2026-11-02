@@ -21,7 +21,12 @@ def fake_query(sql, args):
     if "sum(points_awarded), 0)" in sql:
         return [(4, 7040.0)]
     if "ORDER BY r.reported_at DESC" in sql:
-        return [("WA-0001-00000001", 5000.0, 300.0, 9, 1760.0, "2026-11-02")]
+        return [("WA-0001-00000001", 5000.0, 300.0, 9, 1760.0, "2026-11-02", True)]
+    if "FROM hosts" in sql:
+        return [("Intel i7", "NVIDIA GeForce RTX 4070 Laptop GPU", "Linux", 24)]
+    if "FROM host_results" in sql:
+        return [("WA-0001-00000002", "opencl_nvidia_101", "running", "2026-11-02", None, False),
+                ("WA-0001-00000001", "", "valid", "2026-11-01", "2026-11-02", True)]
     if "count(DISTINCT host_id)" in sql:
         return [(3,)]
     if "count(*) / 7.0" in sql:
@@ -56,6 +61,15 @@ class TestAPI(unittest.TestCase):
     def test_hidden_host_and_non_consenting_user_404(self):
         self.assertEqual(call("/api/v1/hosts/7")[0], "404 Not Found")
         self.assertEqual(call("/api/v1/users/2")[0], "404 Not Found")
+
+    def test_host_hardware_and_recent_work(self):
+        body = json.loads(call("/api/v1/hosts/5")[1])
+        self.assertEqual(body["hardware"]["gpu"], "NVIDIA GeForce RTX 4070 Laptop GPU")
+        gpu_task, cpu_task = body["recent_work"]
+        self.assertEqual((gpu_task["project"], gpu_task["core"], gpu_task["resource"], gpu_task["status"]),
+                         (1, "0xa2", "GPU", "running"))
+        self.assertEqual((cpu_task["core"], cpu_task["resource"], cpu_task["has_3d"]), ("0xa1", "CPU", True))
+        self.assertNotIn("domain_name", json.dumps(body))
 
     def test_unknown_host_404(self):
         self.assertEqual(call("/api/v1/hosts/6")[0], "404 Not Found")

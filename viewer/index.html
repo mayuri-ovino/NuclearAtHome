@@ -17,6 +17,8 @@
       <a href="#stats">Stats</a>
       <a href="#campaigns">Campaigns</a>
       <a href="#news">News</a>
+      <a href="#join" class="cta">Join</a>
+      <a id="login" href="#join">Log in</a>
     </nav>
   </div>
 </header>
@@ -57,6 +59,17 @@
         <div class="tile"><span>Valid WUs (30 days)</span><b id="m-valid">–</b></div>
         <div class="tile"><span>Invalid WUs (30 days)</span><b id="m-invalid">–</b></div>
       </div>
+      <div class="tiles">
+        <div class="tile"><span>CPU</span><b id="m-cpu" class="small">–</b></div>
+        <div class="tile"><span>GPU</span><b id="m-gpu" class="small">–</b></div>
+        <div class="tile"><span>System</span><b id="m-os" class="small">–</b></div>
+      </div>
+      <h2>Recent work</h2>
+      <p class="lede">Project is the campaign number; core is the app version (CPU or GPU build).</p>
+      <div class="scroll"><table>
+        <thead><tr><th>Project</th><th>Core</th><th>Resource</th><th>Status</th><th>Work unit</th><th>Sent</th><th>Returned</th><th></th></tr></thead>
+        <tbody id="m-work"></tbody>
+      </table></div>
       <h2>Time per frame</h2>
       <p class="lede">TPF is the time to finish 1% of a work unit on this computer.</p>
       <div class="scroll"><table><thead><tr><th>Day</th><th>TPF</th></tr></thead><tbody id="m-tpf"></tbody></table></div>
@@ -105,6 +118,44 @@
       <p class="lede" id="c-desc"></p>
       <div id="c-bins"></div>
     </div>
+  </section>
+
+  <section id="join" class="page">
+    <h1>Join Nuclear@Home</h1>
+    <p class="lede">Nuclear@Home runs through BOINC, the free volunteer-computing app. Your account, password and
+      team live in BOINC; this site shows the science and the stats.</p>
+    <div class="cols">
+      <div class="card">
+        <h2>1. Install BOINC</h2>
+        <p>Linux (64-bit) only for now. On Ubuntu, Debian or Raspberry Pi OS:</p>
+        <pre><code>sudo apt install boinc-client boinc-manager</code></pre>
+      </div>
+      <div class="card">
+        <h2>2. Add the project</h2>
+        <p>In BOINC Manager choose <b>Tools → Add project</b>, enter the project address and create your account
+          (username, email, password) or log in.</p>
+        <p id="j-url" class="note">The project address will appear here when the invite-only beta opens.</p>
+      </div>
+      <div class="card">
+        <h2>3. Teams</h2>
+        <p>Create or join a team from your account page on the project site. Your points then count for the team too.</p>
+        <p class="note">Team join codes, approved by team managers, are coming with the beta.</p>
+      </div>
+    </div>
+    <h2>Choose how your computer helps</h2>
+    <p class="lede">These are BOINC Manager settings (<b>Options → Computing preferences</b>); they apply to every BOINC project.</p>
+    <div class="scroll"><table class="wrap">
+      <thead><tr><th>You want</th><th>Setting</th></tr></thead>
+      <tbody>
+        <tr><td>Use only some CPU cores</td><td>Computing → "Use at most __ % of the CPUs" (each work unit uses one core)</td></tr>
+        <tr><td>Run only when idle</td><td>Computing → "Suspend when computer is in use"</td></tr>
+        <tr><td>Run while on battery</td><td>Computing → untick "Suspend when computer is on battery"</td></tr>
+        <tr><td>Use the GPU</td><td>Activity menu → "Use GPU based on preferences"; GPU work units arrive once the GPU version is released</td></tr>
+        <tr><td>Keep the computer awake</td><td>BOINC does not prevent sleep: set your system's power settings so it does not sleep while plugged in</td></tr>
+      </tbody>
+    </table></div>
+    <p class="note">Every finished work unit is uploaded automatically and checked by the server before it earns points.
+      Your computer keeps no copies; the latest cascade of each computer can be viewed in 3D on the Machines and Work Units pages.</p>
   </section>
 
   <section id="news" class="page">

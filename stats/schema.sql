@@ -84,6 +84,17 @@ CREATE TABLE canaries (
     created_at          timestamptz NOT NULL DEFAULT now()
 );
 
+-- Hardware and recent tasks per computer, copied hourly from BOINC by stats/jobs.py. The API
+-- shows them only if the owner lets BOINC show their computers; host names are never copied.
+CREATE TABLE hosts (
+    host_id bigint PRIMARY KEY, user_id bigint NOT NULL, cpu_model text, gpu text, os_name text, ncpus integer
+);
+CREATE TABLE host_results (
+    result_name text PRIMARY KEY, host_id bigint NOT NULL, wu_name text NOT NULL, plan_class text NOT NULL,
+    status text NOT NULL, sent_at timestamptz, reported_at timestamptz
+);
+CREATE INDEX host_results_host ON host_results (host_id, sent_at DESC);
+
 -- BOINC privacy choices, copied daily by stats/jobs.py; the API shows a user only with
 -- stats_export consent and a host only if its owner allows showing computers.
 CREATE TABLE privacy (
@@ -95,12 +106,14 @@ CREATE INDEX wu_results_host ON wu_results (host_id, reported_at);
 
 -- Read-only role for the public API: science and stats only, never canaries.
 CREATE ROLE nah_api NOLOGIN;
-GRANT SELECT ON wu_results, cascade_stats, tpf_samples, host_daily, user_daily, team_daily, badges, science_aggregates, privacy TO nah_api;
+GRANT SELECT ON wu_results, cascade_stats, tpf_samples, host_daily, user_daily, team_daily, badges, science_aggregates, privacy, hosts, host_results TO nah_api;
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 -- Login roles (passwords set outside this repo):
 --   nah_api_login  LOGIN IN ROLE nah_api, CONNECTION LIMIT 20   (API)
 --   nah_validator  SELECT on wu_results, cascade_stats, canaries, canary_pool (validator, read-only)
 --   nah_writer     generator, assimilator, stats jobs (read/write; owns no other database)
 -- BOINC MariaDB user for these scripts: SELECT(id, name, canonical_resultid) ON workunit,
---   SELECT(id, hostid, userid, sent_time, received_time, elapsed_time, granted_credit, validate_state) ON result,
+--   SELECT(id, name, workunitid, hostid, userid, app_version_id, server_state, outcome, sent_time, received_time,
+--          elapsed_time, granted_credit, validate_state) ON result, SELECT(id, plan_class) ON app_version,
+--   SELECT(id, userid, p_model, p_ncpus, os_name, serialnum) ON host,
 --   SELECT(id, teamid, show_hosts) ON user, SELECT ON consent, consent_type. Never the full-rights project user.

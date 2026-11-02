@@ -21,6 +21,52 @@ from server.settings import TodoValue, load, require  # noqa: E402
 from stats import ppd  # noqa: E402
 
 
+# BOINC lib/common_defs.h (checked against BOINC master, 2026-11-02).
+SERVER_IN_PROGRESS, SERVER_OVER = 4, 5
+OUTCOME_SUCCESS, OUTCOME_CLIENT_ERROR, OUTCOME_NO_REPLY, OUTCOME_VALIDATE_ERROR = 1, 3, 4, 6
+VALIDATE_VALID, VALIDATE_INVALID, VALIDATE_TOO_LATE = 1, 2, 5
+
+
+def result_status(server_state: int, outcome: int, validate_state: int) -> str:
+    """One word for a BOINC task's state, as volunteers see it."""
+    if server_state == SERVER_IN_PROGRESS:
+        return "running"
+    if server_state != SERVER_OVER:
+        return "queued"
+    if outcome == OUTCOME_SUCCESS:
+        return {VALIDATE_VALID: "valid", VALIDATE_INVALID: "invalid", VALIDATE_TOO_LATE: "too late"}.get(
+            validate_state, "pending check")
+    return {OUTCOME_CLIENT_ERROR: "error", OUTCOME_NO_REPLY: "timed out",
+            OUTCOME_VALIDATE_ERROR: "invalid"}.get(outcome, "cancelled")
+
+
+def gpus_from_serialnum(serialnum: str) -> str | None:
+    """GPU names from BOINC's host.serialnum ("[BOINC|8.0][CUDA|NVIDIA GeForce ...|1|...][vbox|...]")."""
+    names = [part.split("|")[1] for part in serialnum.strip("[]").split("][")
+             if part.split("|")[0] in ("CUDA", "CAL", "INTEL", "opencl_nvidia", "opencl_ati") and "|" in part]
+    return ", ".join(dict.fromkeys(names)) or None
+
+
+def sync_boinc_hosts(cur) -> None:
+    """Copy host hardware and the last 14 days of tasks from BOINC (no host names, no IPs)."""
+    with db.boinc() as conn, conn.cursor() as bcur:
+        bcur.execute("SELECT id, userid, p_model, os_name, p_ncpus, serialnum FROM host")
+        hosts = bcur.fetchall()
+        bcur.execute("""SELECT r.name, r.hostid, w.name, COALESCE(av.plan_class, ''), r.server_state, r.outcome,
+                               r.validate_state, IF(r.sent_time > 0, FROM_UNIXTIME(r.sent_time), NULL),
+                               IF(r.received_time > 0, FROM_UNIXTIME(r.received_time), NULL)
+                        FROM result r JOIN workunit w ON w.id = r.workunitid
+                        LEFT JOIN app_version av ON av.id = r.app_version_id
+                        WHERE r.hostid > 0 AND r.sent_time > UNIX_TIMESTAMP(NOW() - INTERVAL 14 DAY)""")
+        results = bcur.fetchall()
+    cur.execute("TRUNCATE hosts, host_results")
+    cur.executemany("INSERT INTO hosts VALUES (%s, %s, %s, %s, %s, %s)",
+                    [(h, u, cpu, gpus_from_serialnum(serial or ""), os_name, n) for h, u, cpu, os_name, n, serial in hosts])
+    cur.executemany("INSERT INTO host_results VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                    [(name, host, wu, plan, result_status(state, outcome, valid), sent, got)
+                     for name, host, wu, plan, state, outcome, valid, sent, got in results])
+
+
 def host_est_ppd(tpf_samples: list[float], points_per_wu: list[float]) -> float | None:
     """Estimated PPD for one CPU slot: median recent TPF and mean recent points (no bonus, D2)."""
     if not tpf_samples or not points_per_wu:
@@ -143,6 +189,7 @@ def main(argv: list[str]) -> int:
         with db.pg() as conn, conn.cursor() as cur:
             if argv[1:] == ["hourly"]:
                 hourly(cur, today)
+                sync_boinc_hosts(cur)
             elif argv[1:] == ["daily"]:
                 yesterday = today - dt.timedelta(days=1)
                 sync_privacy(cur)

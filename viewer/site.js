@@ -27,6 +27,11 @@ function fill(tbody, rows, empty) {
 
 function fail(e) { $("error").textContent = `Could not load data (${e.message}).`; }
 
+// Log in goes to BOINC's own login page once the project's BOINC address is configured.
+getJSON("/api/v1/project/summary").then((s) => {
+  if (s && s.boinc_url) $("login").href = `${s.boinc_url.replace(/\/$/, "")}/login_form.php`;
+}).catch(() => {});
+
 const pages = {
   async overview() {
     const s = await getJSON("/api/v1/project/summary");
@@ -41,12 +46,8 @@ const pages = {
   },
   async workunits() {
     const { workunits } = await getJSON("/api/v1/workunits/recent");
-    fill($("w-rows"), workunits.map((w) => {
-      const link = document.createElement("a");
-      link.href = `cascade.html?wu=${encodeURIComponent(w.wu_id)}`;
-      link.textContent = "View 3D";
-      return [w.wu_id, keV(w.pka_energy_ev), `${fmt(w.temperature_k, 0)} K`, w.frenkel_pairs, fmt(w.points, 0), w.day, link];
-    }), "No validated work units yet.");
+    fill($("w-rows"), workunits.map((w) => [w.wu_id, keV(w.pka_energy_ev), `${fmt(w.temperature_k, 0)} K`,
+      w.frenkel_pairs, fmt(w.points, 0), w.day, view3d(w)]), "No validated work units yet.");
   },
   async campaigns() {
     const s = await getJSON("/api/v1/project/summary");
@@ -87,7 +88,19 @@ const pages = {
     }
   },
   async machines() {}, async stats() {},
+  async join() {
+    const { boinc_url } = await getJSON("/api/v1/project/summary");
+    if (boinc_url) $("j-url").textContent = `Project address: ${boinc_url}`;
+  },
 };
+
+function view3d(w) {
+  if (!w.has_3d) return "";
+  const link = document.createElement("a");
+  link.href = `cascade.html?wu=${encodeURIComponent(w.wu_id)}`;
+  link.textContent = "View 3D";
+  return link;
+}
 
 async function lookup(form, input, url, show) {
   form.addEventListener("submit", async (e) => {
@@ -107,6 +120,16 @@ lookup($("m-form"), $("m-id"), (id) => `/api/v1/hosts/${id}`, (h) => {
   $("m-valid").textContent = h.wus_valid_30d;
   $("m-invalid").textContent = h.wus_invalid_30d;
   fill($("m-tpf"), h.tpf_history.map((t) => [t.day, tpf(t.tpf_s)]), "No TPF samples yet.");
+  const hw = h.hardware || {};
+  $("m-cpu").textContent = hw.cpu || "–";
+  $("m-gpu").textContent = hw.gpu || "none reported";
+  $("m-os").textContent = hw.os ? `${hw.os}, ${hw.ncpus} threads` : "–";
+  fill($("m-work"), h.recent_work.map((w) => {
+    const status = document.createElement("span");
+    status.className = `status ${w.status.replace(/ /g, "-")}`;
+    status.textContent = w.status;
+    return [w.project, w.core, w.resource, status, w.wu_id, w.sent || "–", w.returned || "–", view3d(w)];
+  }), "No work in the last 14 days.");
 });
 for (const [who, api] of [["u", "users"], ["t", "teams"]]) {
   lookup($(`${who}-form`), $(`${who}-id`), (id) => `/api/v1/${api}/${id}`, (m) => {

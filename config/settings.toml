@@ -90,5 +90,15 @@ large = { fpops_est = "TODO-CALIBRATE", fpops_bound = "TODO-CALIBRATE", memory_b
 min_quorum = 2                            # validator_spec.md: new hosts always replicated
 target_nresults = 2
 
+[cores]
+# Public hex "core" IDs for our app versions, keyed by BOINC plan class ("" = plain CPU version).
+"" = { id = "0xa1", resource = "CPU", label = "LAMMPS 29Aug2024 (CPU)" }
+opencl_nvidia_101 = { id = "0xa2", resource = "GPU", label = "LAMMPS 29Aug2024 GPU package (OpenCL)" }
+opencl_ati_101 = { id = "0xa2", resource = "GPU", label = "LAMMPS 29Aug2024 GPU package (OpenCL)" }
+opencl_intel_gpu_102 = { id = "0xa2", resource = "GPU", label = "LAMMPS 29Aug2024 GPU package (OpenCL)" }
+
+[web]
+boinc_url = ""                            # the BOINC project's public address, once the server is up (Join / Log in links)
+
 [storage]
 science_dir = "/srv/nuclear/science"      # WU JSON copies and assimilated result files

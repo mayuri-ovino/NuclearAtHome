@@ -74,10 +74,18 @@ def store_result(settings: dict, wu_name: str, wu: dict, record: dict, meta: dic
                     (wu_name, cascade["n_vacancies"], cascade["n_interstitials"], hashes["final.dump"],
                      hashes["energy.txt"], boundary_hit, cascade["cluster_sizes_vac"],
                      cascade["cluster_sizes_int"], f"{wu_name}/{Path(paths[3]).name}"))  # relative to science_dir/results
+        # Keep a 3D snapshot only for this computer's newest result (science files are always kept).
+        cur.execute("""UPDATE cascade_stats c SET snapshot_file = NULL FROM wu_results r
+                       WHERE r.wu_id = c.wu_id AND r.host_id = %s AND c.wu_id <> %s AND c.snapshot_file IS NOT NULL
+                       RETURNING c.snapshot_file""", (meta["host_id"], wu_name))
+        old_snapshots = [row[0] for row in cur.fetchall()]
         for tpf in record["run"]["tpf_samples_s"]:
             cur.execute("INSERT INTO tpf_samples (host_id, wu_id, tpf_s, recorded_at) VALUES (%s,%s,%s,%s)",
                         (meta["host_id"], wu_name, tpf, meta["reported_at"]))
         cur.execute("UPDATE workunits SET status = 'done' WHERE wu_name = %s", (wu_name,))
+    results_dir = Path(require(settings, "storage.science_dir")) / "results"
+    for rel in old_snapshots:  # after the commit, so a failed delete never loses the database update
+        (results_dir / rel).unlink(missing_ok=True)
 
 
 def mark_failed(wu_name: str) -> None:

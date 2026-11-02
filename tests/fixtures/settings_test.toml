@@ -85,5 +85,9 @@ large = { fpops_est = 1e13, fpops_bound = 1e14, memory_bytes = 4e9, delay_bound_
 min_quorum = 2                            # validator_spec.md: new hosts always replicated
 target_nresults = 2
 
+[cores]
+"" = { id = "0xa1", resource = "CPU", label = "CPU" }
+opencl_nvidia_101 = { id = "0xa2", resource = "GPU", label = "OpenCL" }
+
 [storage]
 science_dir = "/srv/nuclear/science"      # WU JSON copies and assimilated result files

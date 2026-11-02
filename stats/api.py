@@ -25,6 +25,23 @@ def _campaign() -> dict:
 
 
 CAMPAIGN = _campaign()
+
+
+def _cores() -> dict:
+    """Plan class -> public core ID, resource (CPU/GPU) and label, from config/settings.toml."""
+    from server.settings import load
+    return load().get("cores", {})
+
+
+CORES = _cores()
+
+
+def _boinc_url() -> str:
+    from server.settings import load
+    return load().get("web", {}).get("boinc_url", "")
+
+
+BOINC_URL = _boinc_url()
 WU_ID = r"[A-Z]{2}-[0-9]{4}-[0-9]{8}"
 
 
@@ -47,9 +64,23 @@ def host(query: Query, host_id: str, qs) -> dict | None:
     tpf = query("""SELECT date_trunc('day', recorded_at)::date, tpf_s FROM tpf_samples WHERE host_id = %s
                    ORDER BY recorded_at DESC LIMIT 100""", (hid,))
     latest = rows[0]
+    hardware = query("SELECT cpu_model, gpu, os_name, ncpus FROM hosts WHERE host_id = %s", (hid,))
+    tasks = query("""SELECT h.wu_name, h.plan_class, h.status, h.sent_at::date, h.reported_at::date,
+                            c.snapshot_file IS NOT NULL FROM host_results h
+                     LEFT JOIN cascade_stats c ON c.wu_id = h.wu_name
+                     WHERE h.host_id = %s ORDER BY h.sent_at DESC LIMIT 20""", (hid,))
     return {"host_id": hid, "est_ppd": latest[4], "actual_ppd_7d": latest[5],
             "wus_valid_30d": sum(r[2] or 0 for r in rows), "wus_invalid_30d": sum(r[3] or 0 for r in rows),
+            "hardware": dict(zip(["cpu", "gpu", "os", "ncpus"], hardware[0])) if hardware else None,
+            "recent_work": [{"wu_id": wu, "project": int(wu[3:7]), **_core(plan), "status": status,
+                             "sent": str(sent) if sent else None, "returned": str(got) if got else None,
+                             "has_3d": bool(has_3d)} for wu, plan, status, sent, got, has_3d in tasks],
             "tpf_history": [{"day": str(day), "tpf_s": t} for day, t in tpf]}
+
+
+def _core(plan_class: str) -> dict:
+    core = CORES.get(plan_class, {})
+    return {"core": core.get("id", "?"), "resource": core.get("resource", "?")}
 
 
 def member(table: str) -> Callable:
@@ -74,16 +105,17 @@ def summary(query: Query, _ident, qs) -> dict:
     (total_wus, total_points), = query("SELECT count(*), coalesce(sum(points_awarded), 0) FROM wu_results", ())
     bins = query("SELECT pka_energy_ev, temperature_k, n FROM science_aggregates ORDER BY 1, 2", ())
     return {"active_hosts_7d": active, "wus_per_day": float(per_day), "total_wus": total_wus,
-            "total_points": float(total_points), "campaign": CAMPAIGN,
+            "total_points": float(total_points), "campaign": CAMPAIGN, "boinc_url": BOINC_URL,
             "campaign_progress": [{"pka_energy_ev": e, "temperature_k": t, "n": n} for e, t, n in bins]}
 
 
 def recent(query: Query, _ident, qs) -> dict:
     """The latest validated cascades (no host or user: those follow the privacy rules)."""
     rows = query("""SELECT r.wu_id, r.pka_energy_ev, r.temperature_k, c.n_vacancies, r.points_awarded,
-                           r.reported_at::date FROM wu_results r JOIN cascade_stats c USING (wu_id)
+                           r.reported_at::date, c.snapshot_file IS NOT NULL
+                    FROM wu_results r JOIN cascade_stats c USING (wu_id)
                     ORDER BY r.reported_at DESC LIMIT 50""", ())
-    keys = ["wu_id", "pka_energy_ev", "temperature_k", "frenkel_pairs", "points", "day"]
+    keys = ["wu_id", "pka_energy_ev", "temperature_k", "frenkel_pairs", "points", "day", "has_3d"]
     return {"workunits": [dict(zip(keys, row)) for row in rows]}
 
 
