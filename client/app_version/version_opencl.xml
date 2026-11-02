@@ -1,0 +1,16 @@
+<!-- GPU app version (core 0xa2, BOINC plan class opencl_nvidia_101): stock wrapper + LAMMPS GPU
+     package over OpenCL. Installed by server/staging/install_app.sh. -->
+<version>
+  <file>
+    <physical_name>wrapper_26018_x86_64-pc-linux-gnu</physical_name>
+    <main_program/>
+  </file>
+  <file>
+    <physical_name>lmp_nah_stable_29Aug2024_opencl</physical_name>
+    <logical_name>lmp</logical_name>
+  </file>
+  <file>
+    <physical_name>job_nah_cascade_opencl_1.xml</physical_name>
+    <logical_name>job.xml</logical_name>
+  </file>
+</version>

@@ -162,7 +162,8 @@
         <tr><td>Use only some CPU cores</td><td>Computing → "Use at most __ % of the CPUs" (each work unit uses one core)</td></tr>
         <tr><td>Run only when idle</td><td>Computing → "Suspend when computer is in use"</td></tr>
         <tr><td>Run while on battery</td><td>Computing → untick "Suspend when computer is on battery"</td></tr>
-        <tr><td>Use the GPU</td><td>Activity menu → "Use GPU based on preferences"; GPU work units arrive once the GPU version is released</td></tr>
+        <tr><td>Use the GPU</td><td>Activity menu → "Use GPU based on preferences". BOINC sends GPU work (NVIDIA, via OpenCL) automatically when it is faster; each GPU task also uses about one CPU core</td></tr>
+        <tr><td>Use only the GPU</td><td>On the project site: Your account → Preferences for this project → untick "Use CPU"</td></tr>
         <tr><td>Keep the computer awake</td><td>BOINC does not prevent sleep: set your system's power settings so it does not sleep while plugged in</td></tr>
       </tbody>
     </table></div>
