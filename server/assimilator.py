@@ -1,8 +1,9 @@
 """BOINC script_assimilator script: store a WU's canonical result in the science database.
 
-Configured as: --script "nah_assimilate wu_name files" (wrapper in server/boinc/bin/).
-BOINC calls it as "--error <code> <wu_name> <wu_id> <batch_id>" when a WU failed for good
-(sched/script_assimilator.cpp).
+Configured as: --script "nah_assimilate wu_id files" (wrapper in server/boinc/bin/). wu_id and
+files are the macros every BOINC version supports; older builds have no wu_name.
+For a WU that failed for good BOINC calls "--error <code> <wu_id>" (older builds) or
+"--error <code> <wu_name> <wu_id> <batch_id>" (current sched/script_assimilator.cpp).
 Idempotent (ON CONFLICT DO NOTHING), because BOINC re-runs a failed assimilation.
 
 Outliers (far from their bin) are kept and flagged: rare cascades are physics, and cheating
@@ -88,6 +89,13 @@ def store_result(settings: dict, wu_name: str, wu: dict, record: dict, meta: dic
         (results_dir / rel).unlink(missing_ok=True)
 
 
+def wu_name_for_id(wu_id: int) -> str:
+    """The WU's name from BOINC's database."""
+    with db.boinc() as conn, conn.cursor() as cur:
+        cur.execute("SELECT name FROM workunit WHERE id = %s", (wu_id,))
+        return cur.fetchone()[0]
+
+
 def mark_failed(wu_name: str) -> None:
     with db.pg() as conn, conn.cursor() as cur:
         cur.execute("UPDATE workunits SET status = 'failed' WHERE wu_name = %s", (wu_name,))
@@ -96,12 +104,13 @@ def mark_failed(wu_name: str) -> None:
 def main(argv: list[str]) -> int:
     limit_resources()
     try:
-        if argv[1] == "--error":
-            mark_failed(argv[3])
+        if argv[1] == "--error":  # old form: <code> <wu_id>; current: <code> <wu_name> <wu_id> <batch>
+            mark_failed(wu_name_for_id(int(argv[3])) if argv[3].isdigit() else argv[3])
         else:
-            assimilate(argv[1], argv[2:])
+            assimilate(wu_name_for_id(int(argv[1])), argv[2:])
     except Exception as error:  # non-zero makes BOINC retry the assimilation later
-        print(f"assimilator error: {error!r}"[:500], file=sys.stderr)
+        import traceback
+        print(f"assimilator error: {error!r}"[:500], *traceback.format_exc().splitlines()[-6:], sep="\n", file=sys.stderr)
         return 1
     return 0
 

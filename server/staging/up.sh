@@ -55,6 +55,9 @@ docker compose exec -T -u root apache bash -c "test -x /opt/py312/bin/python3 ||
   mkdir -p /srv/nuclear/science && chown 1000:1000 /srv/nuclear/science"
 # App, templates, daemons; signed by the makeproject container (staging key).
 docker compose run --rm -T makeproject bash /opt/nuclear-at-home/server/staging/install_app.sh
+# Our wrappers read their environment from bin/nah.env, because BOINC's cron restarts daemons without it.
+docker compose exec -T -u boincadm apache bash -c 'for v in NAH_PYTHON NAH_PG_DSN NAH_SCIENCE_DIR NAH_BOINC_PROJECT_DIR; do
+  printf "export %s=%q\n" $v "${!v}"; done > $PROJECT_ROOT/bin/nah.env && chmod 600 $PROJECT_ROOT/bin/nah.env'
 docker compose exec -T -u boincadm apache bash -c 'cd $PROJECT_ROOT && bin/stop && bin/start'
 for _ in $(seq 30); do docker compose exec -T postgres pg_isready -U postgres -q && break; sleep 2; done
 if ! docker compose exec -T postgres psql -U postgres -d nuclear -tAc "select 1 from pg_tables where tablename='wu_results'" | grep -q 1; then

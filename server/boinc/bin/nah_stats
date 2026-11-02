@@ -1,0 +1,5 @@
+#!/bin/sh
+# Installed into the BOINC project bin/; run periodically by BOINC (config.xml <tasks>, via bin/start --cron).
+# Daemons and tasks may be started by BOINC's cron without our environment: read it from bin/nah.env.
+[ -r "$(dirname "$0")/nah.env" ] && . "$(dirname "$0")/nah.env"
+exec "${NAH_PYTHON:-python3}" -I /opt/nuclear-at-home/stats/jobs.py "$@"

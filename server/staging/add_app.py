@@ -11,7 +11,13 @@ APP = "nuclear_cascade"
 DAEMONS = [
     "script_validator -d 3 --app " + APP + " --credit_from_wu "
     "--init_script \"nah_validate_init result_id runtime files\" --compare_script \"nah_validate_compare\"",
-    "script_assimilator -d 3 --app " + APP + " --script \"nah_assimilate wu_name files\"",
+    "script_assimilator -d 3 --app " + APP + " --script \"nah_assimilate wu_id files\"",
+]
+# Periodic jobs, run by BOINC's own "bin/start --cron" (crontab, every 5 minutes): (cmd, period, disabled)
+TASKS = [
+    ("nah_generate", "10 min", True),   # off until switched on: it keeps max_in_flight WUs queued
+    ("nah_stats hourly", "1 hour", False),
+    ("nah_stats daily", "1 day", False),
 ]
 
 
@@ -26,10 +32,24 @@ def main(root):
     config_xml = os.path.join(root, "config.xml")
     config = ET.parse(config_xml)
     daemons = config.getroot().find("daemons")
-    present = set((d.findtext("cmd") or "").strip() for d in daemons.iter("daemon"))
+    for daemon in list(daemons):  # replace our daemons, so a changed command line takes effect
+        if "--app " + APP in (daemon.findtext("cmd") or ""):
+            daemons.remove(daemon)
     for cmd in DAEMONS:
-        if cmd not in present:
-            ET.SubElement(ET.SubElement(daemons, "daemon"), "cmd").text = cmd
+        ET.SubElement(ET.SubElement(daemons, "daemon"), "cmd").text = cmd
+    tasks = config.getroot().find("tasks")
+    if tasks is None:
+        tasks = ET.SubElement(config.getroot(), "tasks")
+    for task in list(tasks):  # replace ours, keep BOINC's own tasks
+        if (task.findtext("cmd") or "").startswith("nah_"):
+            tasks.remove(task)
+    for cmd, period, disabled in TASKS:
+        task = ET.SubElement(tasks, "task")
+        ET.SubElement(task, "cmd").text = cmd
+        ET.SubElement(task, "period").text = period
+        ET.SubElement(task, "output").text = cmd.replace(" ", "_") + ".out"
+        if disabled:
+            ET.SubElement(task, "disabled").text = "1"
     config.write(config_xml)
 
 

@@ -1,3 +1,5 @@
 #!/bin/sh
 # Installed into the BOINC project bin/; BOINC daemons run ../bin/nah_validate_compare.
+# Daemons may be (re)started by BOINC's cron without our environment: read it from bin/nah.env.
+[ -r "$(dirname "$0")/nah.env" ] && . "$(dirname "$0")/nah.env"
 exec "${NAH_PYTHON:-python3}" -I /opt/nuclear-at-home/validator/validate_compare.py "$@"

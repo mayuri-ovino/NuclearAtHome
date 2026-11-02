@@ -2,7 +2,8 @@
      Paths assume this repo is checked out at /opt/nuclear-at-home on the server.
      Script names are looked up in the project's bin/ (BOINC runs ../bin/<name>): install the
      wrappers from server/boinc/bin/ there. Macros and exit codes checked against BOINC master
-     source (2026-11-01): init_script gets result_id/runtime/files; exit 3 = transient retry.
+     source (2026-11-01): init_script gets result_id/runtime/files; exit 3 = transient retry; the assimilator
+     uses wu_id (older BOINC builds have no wu_name macro, found on staging 2026-11-02).
      Still verify on staging: adaptive replication for the app (D3). -->
 <config>
   <!-- Replicas must go to different volunteers, or quorum 2 checks nothing (cheating defence).
@@ -20,7 +21,7 @@
   </daemon>
   <daemon>
     <cmd>script_assimilator -d 3 --app nuclear_cascade
-      --script "nah_assimilate wu_name files"</cmd>
+      --script "nah_assimilate wu_id files"</cmd>
   </daemon>
 </daemons>
 <!-- cron (project user), with flock so only one generator runs:
