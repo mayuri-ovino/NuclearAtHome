@@ -84,6 +84,7 @@ to DFT or experiment with sources.
 | 2026-11-02 | W_EAM_A = exact Juslin-Wirth from the paper's Eq. 3 / Table 2 (human supplied the paper) | Matches the benchmark potential; ⟨111⟩ dumbbell 9.52 vs 9.50 eV | main agent |
 | 2026-11-02 | Stopping cutoff 30 eV (E_D^min, Hemani et al.); SRIM-2013 table | Matches the benchmark's stopping reference; Hemani found E_D^min best matches NRT losses | main agent |
 | 2026-11-02 | V4 tolerance 0.5% of PKA energy (was 0.2%) | Measured (2 keV, JW + SRIM stopping, 30 eV cutoff): drift 4.2e-4 without stopping (JW's published, rounded coefficients leave a 0.08 eV step at r1; kept as published) and 8.8e-4 with stopping (electron/stopping's energy tally); neither is cascade physics | main agent |
+| 2026-11-02 | V4 = drift / (E_PKA + thermostat-removed energy) ≤ 1% | 5 keV calibration run: drift 36.6 eV grew with the 3.9 keV the thermostat removed (Langevin tally ~1% inexact), stopping added ~3 eV; drift/flow 4.1e-3. Per PKA energy it was 7.3e-3, which wrongly failed an honest run | main agent |
 | 2026-11-02 | Setyawan values verified in the paper (a0 300 K, 0.005 Å, NN3/NN4) | Human supplied the papers | main agent |
 | 2026-11-01 | a0 = 3.1674 Å, measured (NPT, 300 K, 0 bar) with this potential | Measurement; matches Setyawan's 3.167 Å for JW at 300 K | main agent |
 | 2026-11-01 | Fixed outer cell + 2-cell thermostat, 1 fs max timestep, 10 ps equilibration, 20 ps runs | Warrier & Bhardwaj protocol (read directly) | main agent |

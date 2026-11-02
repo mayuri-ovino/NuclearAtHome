@@ -14,7 +14,7 @@ Nothing left. The SRIM stopping table, the exact Juslin–Wirth potential and th
 ## 3. Needed for good science (not blocking the alpha)
 
 6. **You: digitize Warrier & Bhardwaj Fig. 2** to replace the sanity-only V7 ranges (#6).
-7. **You, when ready: calibrate on your laptop** (postponed at your request). One 5 keV and one 10 keV work unit, to fill the per-tier BOINC estimates: `fpops_est`, `fpops_bound`, `memory_bytes`, `delay_bound_s`.
+7. **Calibration:** 5 keV done (5,800 s on one core, 314 MB, 9 Frenkel pairs; passes V1–V8). Still to do: the 10 keV large-tier run (about 3.4× the atoms, roughly 5–6 h), and replacing the assumed 5e9 FLOPS/core with a BOINC benchmark.
 8. **Physics:** a new temperature needs its own measured a0 (the template has no NPT step).
 9. **Agent: Phase 2.** Freeze the interfaces from these decisions; you run the 2-step freeze from the README.
 

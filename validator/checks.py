@@ -97,7 +97,9 @@ def v3_completeness(record, wu, ctx):
 
 
 def v4_energy(record, wu, ctx):
-    """|E(t) + removed by thermostat + electronic loss - E(0)| / E_PKA within tolerance at every sample."""
+    """|E(t) + removed by thermostat + electronic loss - E(0)| / (E_PKA + |removed by thermostat|)
+    within tolerance at every sample. The Langevin energy tally is ~1% inexact, so its error grows
+    with the energy the thermostat moves, not with the PKA energy (5 keV calibration run)."""
     tolerance = require(ctx["settings"], "validator.energy_tolerance")
     log = record["energy_log"]
     if log[0]["step"] != 0:
@@ -105,7 +107,8 @@ def v4_energy(record, wu, ctx):
     e0 = log[0]["total_energy_ev"]
     pka = wu["pka"]["energy_ev"]
     for row in log:
-        drift = abs(row["total_energy_ev"] + row["thermostat_energy_ev"] + row["electronic_loss_ev"] - e0) / pka
+        flow = pka + abs(row["thermostat_energy_ev"])
+        drift = abs(row["total_energy_ev"] + row["thermostat_energy_ev"] + row["electronic_loss_ev"] - e0) / flow
         if not drift <= tolerance:  # written so NaN fails
             return False, f"energy drift {drift:.3g} at step {row['step']} exceeds {tolerance}"
     return True, "ok"

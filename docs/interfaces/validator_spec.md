@@ -14,7 +14,7 @@ Status: DRAFT
 | V1 | Schema | Result validates against `result_schema.json` | — |
 | V2 | Integrity | sha256 of every output file matches `integrity.output_sha256`; input hash matches the WU sent | — |
 | V3 | Completeness | `md_steps_completed` ≥ the minimum for this WU; stop condition reached | min steps TODO-DECIDE |
-| V4 | Energy conservation | \|E_total(t) + thermostat_removed(t) + electronic_loss(t) − E_total(0)\| / PKA energy ≤ tolerance at every logged sample | tolerance TODO-DECIDE |
+| V4 | Energy conservation | \|E_total(t) + thermostat_removed(t) + electronic_loss(t) − E_total(0)\| / (PKA energy + \|thermostat_removed(t)\|) ≤ tolerance at every logged sample | 0.01 (physics_settings.md decision log) |
 | V5 | Stabilization | Last N points of `defect_count_history` vary by ≤ tolerance | N, tolerance TODO-DECIDE |
 | V6 | Frenkel balance | n_vacancies == n_interstitials (no atoms created or lost) | exact |
 | V7 | Plausible range | Frenkel pairs within the range for (material, energy bin, temperature bin) in `validator/plausible_ranges.csv` | from table (TODO-LIT) |

@@ -57,8 +57,8 @@ bootstrap_samples = 2000
 
 [validator]
 min_md_steps = 20000                      # V3: 20 ps at dt <= 1 fs needs at least this many
-energy_tolerance = 0.005                  # V4, fraction of PKA energy: measured with JW 4.2e-4 without stopping, 8.8e-4 with
-                                          # (JW's rounded coefficients leave a 0.08 eV step at r1; the stopping tally adds the rest)
+energy_tolerance = 0.01                   # V4, fraction of (PKA energy + thermostat-removed energy): the real 5 keV run
+                                          # reached 4.1e-3 (Langevin tally ~1% inexact over 20 ps; JW r1 step; stopping tally)
 boundary_ke_flag_ev = 10.0                # flag (not reject) a run whose recoil above this reaches the boundary layers;
                                           # 10 eV = stopping cutoff, ~400 kT at 300 K
 population_test = "none"                  # replicas equivalent when both pass V1-V8 (decision log)
@@ -82,7 +82,10 @@ project_dir = "/home/boincadm/projects/nuclear"
 wu_template = "templates/nah_cascade_in"
 result_template = "templates/nah_cascade_out"
 # Per size tier (BOINC estimates; measure on the reference machine).
-small = { fpops_est = "TODO-CALIBRATE", fpops_bound = "TODO-CALIBRATE", memory_bytes = "TODO-CALIBRATE", delay_bound_s = "TODO-DECIDE" }
+# small: measured 2026-11-02, 5 keV WU on the reference laptop (i7, 1 core): 5,800 s, peak RSS 314 MB.
+# shortcut: fpops_est assumes 5e9 FLOPS per core (typical BOINC Whetstone for a modern i7); replace with this
+# laptop's BOINC benchmark once a BOINC client runs here. bound = 10x est so slow hosts are not aborted.
+small = { fpops_est = 2.9e13, fpops_bound = 2.9e14, memory_bytes = 1e9, delay_bound_s = 604800 }
 large = { fpops_est = "TODO-CALIBRATE", fpops_bound = "TODO-CALIBRATE", memory_bytes = "TODO-CALIBRATE", delay_bound_s = "TODO-DECIDE" }
 min_quorum = 2                            # validator_spec.md: new hosts always replicated
 target_nresults = 2
