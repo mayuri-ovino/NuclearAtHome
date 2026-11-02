@@ -7,27 +7,37 @@
   <link rel="stylesheet" href="style.css">
   <script type="importmap">{ "imports": { "three": "./vendor/three.module.js" } }</script>
 </head>
-<body>
-<header class="top"><div class="bar"><a class="brand" href="index.html#overview"><span class="mark" aria-hidden="true"></span><span>Nuclear<span class="at">@</span>Home</span></a><nav aria-label="Sections"><a href="index.html#workunits">Back to work units</a></nav></div></header>
-<main>
-  <h1>Cascade viewer</h1>
-  <form id="pick" class="controls">
+<body class="viewer">
+<canvas id="view" aria-label="3D view of the cascade"></canvas>
+
+<div class="panel controls-panel" role="toolbar" aria-label="Viewer controls">
+  <span class="label">View</span>
+  <button type="button" class="view" data-view="0" aria-label="Perspective view">1</button>
+  <button type="button" class="view" data-view="1" aria-label="Top view">2</button>
+  <button type="button" class="view" data-view="2" aria-label="Side view">3</button>
+  <span class="label">Frame</span>
+  <button type="button" id="prev" aria-label="Previous frame">‹</button>
+  <span id="counter" class="counter" aria-live="polite">– of –</span>
+  <button type="button" id="next" aria-label="Next frame">›</button>
+  <button type="button" id="play" aria-label="Play">▶</button>
+  <a class="button close" href="index.html#workunits">✕ Close</a>
+</div>
+
+<div class="panel info-panel">
+  <form id="pick">
     <label>Work unit <input id="wu" name="wu" placeholder="WA-0001-00000001" pattern="[A-Z]{2}-[0-9]{4}-[0-9]{8}" required></label>
     <button>Open</button>
   </form>
-  <p id="info" aria-live="polite"></p>
-  <canvas id="view" aria-label="3D view of the cascade"></canvas>
-  <div class="controls">
-    <button id="play" type="button">Play</button>
-    <label>Frame <input id="frame" type="range" min="0" max="0" value="0"></label>
-    <span id="step"></span>
+  <dl id="facts"></dl>
+  <div class="toggles">
     <label><input id="showVac" type="checkbox" checked> Vacancies</label>
-    <label><input id="showAtoms" type="checkbox" checked> Moving and displaced atoms</label>
+    <label><input id="showAtoms" type="checkbox" checked> Atoms</label>
+    <label><input id="spin" type="checkbox"> Auto-rotate</label>
   </div>
-  <p class="lede">Spheres: atoms that are moving fast (colour = kinetic energy, blue low, red high) or sit off
-    their lattice site. Cubes: empty lattice sites (vacancies). Drag to rotate, scroll to zoom.</p>
+  <p class="legend"><span class="dot hot"></span>fast &nbsp;<span class="dot cold"></span>slow &nbsp;<span class="cube"></span>empty site</p>
   <p id="error" class="err" role="alert"></p>
-</main>
+</div>
+
 <script type="module" src="cascade.js"></script>
 </body>
 </html>
