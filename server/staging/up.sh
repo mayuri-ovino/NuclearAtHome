@@ -22,7 +22,10 @@ cat > "$upstream/docker-compose.override.yml" <<YML
 services:
   makeproject:
     volumes: ["$repo:/opt/nuclear-at-home:ro"]
+  mysql:
+    restart: unless-stopped
   apache:
+    restart: unless-stopped   # come back after a reboot (then re-run up.sh if Python is missing)
     environment:
       - NAH_PG_DSN=host=postgres dbname=nuclear user=postgres
       - NAH_SCIENCE_DIR=/srv/nuclear/science
@@ -33,6 +36,7 @@ services:
       - "science:/srv/nuclear/science"
   postgres:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment: [POSTGRES_DB=nuclear, POSTGRES_HOST_AUTH_METHOD=trust]   # staging only
     ports: ["127.0.0.1:5433:5432"]
     volumes: ["pgdata:/var/lib/postgresql/data"]
