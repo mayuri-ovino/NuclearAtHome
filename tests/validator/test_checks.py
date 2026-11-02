@@ -17,12 +17,12 @@ class TestChecks(unittest.TestCase):
     def setUp(self):
         self.wu = wu()
         self.ctx = {"settings": settings(), "ranges": [RANGE],
-                    "stored_params_sha256": params_digest(parse_params(render_params(settings(), self.wu)))}
+                    "stored_params_sha256": params_digest(parse_params(render_params(settings(), self.wu))), "a0": 3.0}
 
     def record(self, **kwargs):
         with tempfile.TemporaryDirectory() as tmp:
             paths = write_result(Path(tmp), self.wu, **kwargs)
-            return build_cascade_record(files_by_name(paths), app_version="1", elapsed_s=100.0,
+            return build_cascade_record(files_by_name(paths), wu=self.wu, a0=3.0, app_version="1", elapsed_s=100.0,
                                         vacancy_cutoff=2.9, interstitial_cutoff=2.9)
 
     def assert_fails(self, record, check_id, ctx=None):
@@ -38,6 +38,20 @@ class TestChecks(unittest.TestCase):
         other = wu(serial=2)
         passed, failures = run_checks(self.record(), other, self.ctx)
         self.assertTrue(any(f.startswith("V1") for f in failures), failures)
+
+    def test_replayed_result_rejected(self):
+        self.assert_fails(self.record(), "V2", dict(self.ctx, duplicate_of="WA-0001-00000009"))
+
+    def test_pka_must_move_along_this_wus_direction(self):
+        record = self.record()
+        start = record["cascade"]["pka_start"]
+        record["cascade"]["pka_first"] = [start[0] - 0.4, start[1], start[2]]
+        self.assert_fails(record, "V2")
+
+    def test_pka_must_start_on_the_centre_site(self):
+        record = self.record()
+        record["cascade"]["pka_start"] = [0.0, 0.0, 0.0]
+        self.assert_fails(record, "V2")
 
     def test_params_mismatch(self):
         ctx = dict(self.ctx, stored_params_sha256="0" * 64)
@@ -59,6 +73,19 @@ class TestChecks(unittest.TestCase):
         record["cascade"]["n_vacancies"] = record["cascade"]["n_interstitials"] = 1
         passed, failures = run_checks(record, self.wu, self.ctx)
         self.assertTrue(passed, failures)
+
+    def test_hard_limit_run_must_reach_the_limit(self):
+        record = self.record()
+        record["run"]["stop_reason"] = "hard_limit"
+        record["run"]["simulated_time_ps"] = 10.0
+        self.assertTrue(run_checks(record, self.wu, self.ctx)[0])
+        record["run"]["simulated_time_ps"] = 9.0
+        self.assert_fails(record, "V5")
+
+    def test_client_and_server_counts_must_agree(self):
+        record = self.record()
+        record["cascade"]["defect_count_history"][-1][1] = 5
+        self.assert_fails(record, "V6")
 
     def test_frenkel_imbalance(self):
         record = self.record()
@@ -89,6 +116,17 @@ class TestChecks(unittest.TestCase):
         self.assert_fails(record, "V1")
 
 
+class TestCanaryVerdict(unittest.TestCase):
+    def test_canary_mismatch_is_invalid(self):
+        from validator.validate_init import judge
+        t = TestChecks()
+        t.setUp()
+        record = t.record()  # 1 Frenkel pair
+        self.assertEqual(judge(record, t.wu, t.ctx, None, 3.0), [])
+        self.assertEqual(judge(record, t.wu, t.ctx, (1.5, 1.0), 3.0), [])
+        self.assertEqual(judge(record, t.wu, t.ctx, (20.0, 2.0), 3.0), ["canary mismatch"])
+
+
 class TestRangesAndPopulation(unittest.TestCase):
     def test_row_without_source_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -100,8 +138,8 @@ class TestRangesAndPopulation(unittest.TestCase):
             with self.assertRaises(ValueError):
                 load_ranges(path)
 
-    def test_repo_ranges_file_loads_empty(self):
-        self.assertEqual(load_ranges(), [])
+    def test_repo_ranges_have_sources(self):
+        self.assertEqual([r["frenkel_max"] for r in load_ranges()], ["47", "95"])
 
     def test_zscore(self):
         self.assertIsNone(zscore(5, [1, 2, 3], min_samples=5))

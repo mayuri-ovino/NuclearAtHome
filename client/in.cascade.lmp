@@ -7,7 +7,7 @@
 # Outputs (all in the slot directory):
 #   log.lammps        echoed commands and thermo (the server checks the echoed params)
 #   energy.txt        step time etotal thermostat_removed electronic_loss, one row per check
-#   history.txt       step time n_frenkel, one row per check
+#   history.txt       step time n_frenkel max_boundary_ke_ev, one row per check
 #   snapshots.dump    sparse frames for the viewer
 #   final.dump        all atoms at the end, for server-side Wigner-Seitz analysis
 #   run.state         counters and stop reason
@@ -44,9 +44,16 @@ compute         ke all ke/atom
 compute         kesum all reduce sum c_ke
 variable        snap atom (c_ke>${snap_ke})||(c_ws[1]!=1)
 
-region          core block ${tcells} $(v_n-v_tcells) ${tcells} $(v_n-v_tcells) ${tcells} $(v_n-v_tcells)
+# Outermost fcells cells are held fixed during the cascade; the next tcells cells are the
+# thermostat layer; the core is free NVE (Warrier & Bhardwaj protocol).
+variable        inner equal v_fcells+v_tcells
+region          mobile block ${fcells} $(v_n-v_fcells) ${fcells} $(v_n-v_fcells) ${fcells} $(v_n-v_fcells)
+region          core block ${inner} $(v_n-v_inner) ${inner} $(v_n-v_inner) ${inner} $(v_n-v_inner)
+group           mobile region mobile
 group           core region core
-group           edge subtract all core
+group           fixed subtract all mobile
+group           edge subtract mobile core
+group           outer subtract all core
 
 thermo_style    custom step time dt temp etotal c_nvac c_kesum
 thermo          ${check_steps}
@@ -75,6 +82,7 @@ fix             eq all langevin ${temp} ${temp} ${tdamp} ${seed}
 timestep        ${dt_max}
 run             ${equil_steps}
 unfix           eq
+velocity        fixed set 0.0 0.0 0.0
 reset_timestep  0 time 0.0
 
 variable        am atom mass
@@ -84,6 +92,8 @@ run             0
 # Speed from E = m v^2 / 2; 1.0364269e-4 is LAMMPS's metal-units mvv2e (eV per g/mol A^2/ps^2).
 variable        vpka equal sqrt(2.0*${pka_e}/($(c_pkam)*1.0364269e-4))
 velocity        pka set $(v_vpka*v_pka_dx) $(v_vpka*v_pka_dy) $(v_vpka*v_pka_dz) units box
+# Logged so the server can check this run started from this WU's PKA site and direction.
+print           "PKA_START $(xcm(pka,x)) $(xcm(pka,y)) $(xcm(pka,z))"
 uncompute       pkam
 variable        fpref equal 0
 variable        tref equal 0.0
@@ -98,6 +108,7 @@ reset_timestep  ${ck_step} time ${ck_time}
 
 # ---------------------------------------------------------------- cascade
 label           cascade
+fix             freeze fixed setforce 0.0 0.0 0.0
 fix             th edge langevin ${temp} ${temp} ${tdamp} $(v_seed+1+v_n_restarts) tally yes
 fix             es all electron/stopping ${es_cutoff} stopping.dat
 fix             dtr all dt/reset 1 NULL ${dt_max} ${dx_max} units box
@@ -107,12 +118,14 @@ timestep        ${ck_dt}
 variable        thermo_rm equal ${off_thermo}
 variable        elec_loss equal ${off_elec}
 variable        frac equal ternary(time<${max_time},time/${max_time},1.0)
-thermo_style    custom step time dt temp etotal c_nvac c_kesum f_th f_es
+# Highest kinetic energy outside the free core: a recoil reaching the thermostat or fixed layer.
+compute         keb outer reduce max c_ke
+thermo_style    custom step time dt temp etotal c_nvac c_kesum c_keb f_th f_es
 thermo          ${check_steps}
 run             0
 if "${n_restarts} == 0" then &
   "print '$(step) $(time) $(etotal) $(v_thermo_rm) $(v_elec_loss)' append energy.txt screen no" &
-  "print '$(step) $(time) $(c_nvac)' append history.txt screen no"
+  "print '$(step) $(time) $(c_nvac) $(c_keb)' append history.txt screen no"
 
 label           loop
 run             ${check_steps}
@@ -120,15 +133,16 @@ variable        thermo_rm equal $(v_thermo_rm+f_th)
 variable        elec_loss equal $(v_elec_loss+f_es)
 variable        icheck equal $(v_icheck+1)
 print           "$(step) $(time) $(etotal) $(v_thermo_rm) $(v_elec_loss)" append energy.txt screen no
-print           "$(step) $(time) $(c_nvac)" append history.txt screen no
+print           "$(step) $(time) $(c_nvac) $(c_keb)" append history.txt screen no
 print           "$(v_frac)" file progress.txt screen no
+if "${icheck} == 1" then "print 'PKA_FIRST $(xcm(pka,x)) $(xcm(pka,y)) $(xcm(pka,z))'"
 if "$(abs(c_nvac-v_fpref)) > ${stop_tol}" then "variable fpref equal $(c_nvac)" "variable tref equal $(time)"
 if "$(v_icheck%v_snap_every) == 0" then &
   "write_dump all custom snapshots.dump id type x y z c_ke c_ws[1] f_ref[1] f_ref[2] f_ref[3] modify append yes thresh v_snap == 1"
 if "$(v_icheck%v_ckpt_every) == 0" then "jump SELF checkpoint"
 label           after_checkpoint
-if "$(time-v_tref) >= ${stop_window}" then "variable stop_reason string stabilized" "jump SELF done"
 if "$(time) >= ${max_time}" then "variable stop_reason string hard_limit" "jump SELF done"
+if "$(time-v_tref) >= ${stop_window}" then "variable stop_reason string stabilized" "jump SELF done"
 jump            SELF loop
 
 # ---------------------------------------------------------------- checkpoint
@@ -161,7 +175,7 @@ jump            SELF after_checkpoint
 # ---------------------------------------------------------------- done
 label           done
 print           "1.0" file progress.txt screen no
-write_dump      all custom final.dump id type x y z ix iy iz modify sort id
+write_dump      all custom final.dump id type x y z ix iy iz modify sort id format float %.17g
 print           """
 md_steps $(step)
 simulated_time_ps $(time)

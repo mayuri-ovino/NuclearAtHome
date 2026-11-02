@@ -39,11 +39,15 @@ def write_result(directory: Path, record: dict, *, frenkel: int = 1, drift_per_r
     params = render_params(s, record)
     a0, cells = 3.0, record["box"]["unit_cells"][0]
     length = a0 * cells
-    log = "LAMMPS (29 Aug 2024)\ninclude params.lmp\n" + params + "units metal\n"
+    d = record["pka"]["direction"]
+    start = [cells // 2 * a0 + 0.05] * 3
+    trace = (f"PKA_START {start[0]} {start[1]} {start[2]}\n"
+             f"PKA_FIRST {start[0] + 0.4 * d[0]} {start[1] + 0.4 * d[1]} {start[2] + 0.4 * d[2]}\n")
+    log = "LAMMPS (29 Aug 2024)\ninclude params.lmp\n" + params + "units metal\n" + trace
     if restart:
         log += "include params.lmp\n" + params + "units metal\n"
     energy = [f"{100 * i} {0.1 * i:.1f} {-1000.0 + drift_per_row * i} 0.0 0.0" for i in range(101)]
-    history = [f"{100 * i} {0.1 * i:.1f} {max(frenkel, 30 - i) if i < 50 else frenkel}" for i in range(101)]
+    history = [f"{100 * i} {0.1 * i:.1f} {max(frenkel, 30 - i) if i < 50 else frenkel} 0.5" for i in range(101)]
     if restart:  # rows after the checkpoint at row 80 were written twice
         energy[81:81] = energy[80:90]
         history[81:81] = history[80:90]

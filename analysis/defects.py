@@ -28,11 +28,9 @@ def wigner_seitz(positions: np.ndarray, sites: np.ndarray, box_length: float) ->
     dist, idx = tree.query(positions % box_length)
     occupancy = np.bincount(idx, minlength=len(sites))
     vacancies = sites[occupancy == 0]
-    extra = []
-    for site in np.flatnonzero(occupancy > 1):
-        members = np.flatnonzero(idx == site)
-        extra.extend(members[np.argsort(dist[members])][1:])
-    return vacancies, positions[np.array(extra, dtype=int)] % box_length
+    order = np.lexsort((dist, idx))  # by site, nearest atom first
+    extra = order[1:][idx[order][1:] == idx[order][:-1]]  # every atom after the first at its site
+    return vacancies, positions[extra] % box_length
 
 
 def clusters(points: np.ndarray, cutoff: float, box_length: float) -> list[int]:
@@ -54,8 +52,13 @@ def clusters(points: np.ndarray, cutoff: float, box_length: float) -> list[int]:
     return sorted((int(s) for s in sizes if s > 0), reverse=True)
 
 
-def final_defects(frame: dict, *, lattice: str, cells: int, a0: float) -> tuple[np.ndarray, np.ndarray, float]:
-    """Vacancies, interstitials and box length from the final.dump frame."""
+def final_defects(frame: dict, *, lattice: str, cells: int, a0: float,
+                  max_defects: int) -> tuple[np.ndarray, np.ndarray, float]:
+    """Vacancies, interstitials and box length from the final.dump frame.
+
+    More than max_defects is rejected before clustering, whose cost grows with the square of
+    the number of close defects (a forged dump could otherwise exhaust server memory).
+    """
     lengths = frame["bounds"][:, 1] - frame["bounds"][:, 0]
     box_length = float(lengths[0])
     if not np.allclose(lengths, box_length * np.ones(3)) or not np.isclose(box_length, cells * a0):
@@ -63,4 +66,6 @@ def final_defects(frame: dict, *, lattice: str, cells: int, a0: float) -> tuple[
     cols = frame["columns"]
     xyz = frame["data"][:, [cols.index("x"), cols.index("y"), cols.index("z")]] - frame["bounds"][:, 0]
     vacancies, interstitials = wigner_seitz(xyz, lattice_sites(lattice, cells, a0), box_length)
+    if len(vacancies) > max_defects or len(interstitials) > max_defects:
+        raise ValueError(f"{len(vacancies)} vacancies exceed the {max_defects} accepted")
     return vacancies, interstitials, box_length

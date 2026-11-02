@@ -1,1 +1,3 @@
 material,energy_bin_kev_min,energy_bin_kev_max,temp_bin_k_min,temp_bin_k_max,frenkel_min,frenkel_max,source
+W,4.5,5.5,250,350,0,47,sanity bound: NRT count (Norgett-Robinson-Torrens 1975) at the full PKA energy with E_d = 42 eV (lowest experimental W TDE; Warrier & Bhardwaj Table 3); MD survivors are well below NRT. Crash/garbage detector only: never cite as a physical range. Replace with benchmark-derived ranges
+W,9.5,10.5,250,350,0,95,sanity bound: NRT count (Norgett-Robinson-Torrens 1975) at the full PKA energy with E_d = 42 eV (lowest experimental W TDE; Warrier & Bhardwaj Table 3); MD survivors are well below NRT. Crash/garbage detector only: never cite as a physical range. Replace with benchmark-derived ranges

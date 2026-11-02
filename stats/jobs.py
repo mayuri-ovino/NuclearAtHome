@@ -85,12 +85,12 @@ def award_badges(cur, settings: dict) -> None:
 
 
 def science_aggregates(cur, settings: dict) -> None:
-    """Frenkel-pair statistics per bin, from validated results that are not held and not canaries."""
+    """Frenkel-pair statistics per bin, from validated non-canary results (outliers are physics, so they count)."""
     samples = require(settings, "analysis.bootstrap_samples")
     cur.execute("""SELECT r.material_family, r.potential_id, r.pka_energy_ev, r.temperature_k,
                           array_agg(c.n_vacancies), array_agg(array_to_string(c.cluster_sizes_vac, ','))
                    FROM wu_results r JOIN cascade_stats c USING (wu_id)
-                   WHERE r.validated AND NOT r.held AND r.wu_id NOT IN (SELECT wu_name FROM canaries)
+                   WHERE r.validated AND r.wu_id NOT IN (SELECT wu_name FROM canaries)
                    GROUP BY 1, 2, 3, 4""")
     for material, potential, energy, temperature, counts, cluster_lists in cur.fetchall():
         s = summarize(counts, samples)
@@ -106,6 +106,26 @@ def science_aggregates(cur, settings: dict) -> None:
                          cluster_size_hist = EXCLUDED.cluster_size_hist, updated_at = now()""",
                     (material, potential, energy, temperature, s["n"], s["mean"], s["se"], ci[0], ci[1],
                      json.dumps(hist)))
+
+
+def sync_privacy(cur) -> None:
+    """Copy BOINC privacy choices; anonymize rows of deleted accounts (science data stays)."""
+    with db.boinc() as conn, conn.cursor() as bcur:
+        bcur.execute("""SELECT u.id, u.show_hosts, COALESCE((SELECT c.consent_flag FROM consent c
+                          JOIN consent_type t ON t.id = c.consent_type_id
+                          WHERE c.userid = u.id AND t.shortname = 'STATSEXPORT'
+                          ORDER BY c.consent_time DESC LIMIT 1), 0) FROM user u""")
+        rows = bcur.fetchall()
+    cur.execute("TRUNCATE privacy")
+    cur.executemany("INSERT INTO privacy VALUES (%s, %s, %s)", [(u, bool(h), bool(c)) for u, h, c in rows])
+    gone = "SELECT host_id FROM wu_results WHERE user_id <> 0 AND user_id NOT IN (SELECT user_id FROM privacy)"
+    cur.execute(f"DELETE FROM tpf_samples WHERE host_id IN ({gone})")
+    cur.execute(f"DELETE FROM host_daily WHERE host_id IN ({gone})")
+    cur.execute("UPDATE wu_results SET user_id = 0, host_id = 0, team_id = 0 WHERE user_id <> 0 "
+                "AND user_id NOT IN (SELECT user_id FROM privacy)")
+    for table in ("user_daily", "badges"):
+        key = "id" if table == "user_daily" else "user_id"
+        cur.execute(f"DELETE FROM {table} WHERE {key} NOT IN (SELECT user_id FROM privacy)")
 
 
 def invalid_counts(day: dt.date) -> dict[int, int]:
@@ -125,6 +145,7 @@ def main(argv: list[str]) -> int:
                 hourly(cur, today)
             elif argv[1:] == ["daily"]:
                 yesterday = today - dt.timedelta(days=1)
+                sync_privacy(cur)
                 daily(cur, yesterday, settings, invalid_counts(yesterday))
             else:
                 print(__doc__, file=sys.stderr)

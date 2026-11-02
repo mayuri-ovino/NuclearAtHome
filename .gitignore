@@ -18,8 +18,11 @@ data/raw/
 
 # Secrets — the code-signing private key must NEVER be here
 secrets/
+keys/
 *.priv
+*_private
 *_private_key*
+*.pem
 .env
 
 # Claude Code local files
@@ -29,3 +32,6 @@ secrets/
 # OS
 .DS_Store
 Thumbs.db
+
+# Built LAMMPS binaries (publish via BOINC app versions, not git)
+client/app_version/lmp_*

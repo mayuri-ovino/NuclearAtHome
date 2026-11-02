@@ -9,7 +9,6 @@ from __future__ import annotations
 import json
 import os
 import re
-from pathlib import Path
 from typing import Callable
 from urllib.parse import parse_qs
 
@@ -23,20 +22,29 @@ def _float_arg(qs: dict, name: str) -> float | None:
 
 
 def host(query: Query, host_id: str, qs) -> dict | None:
+    """Host stats, only if the owner lets BOINC show their computers. Times are rounded to the
+    day, so the API does not reveal when a computer is switched on."""
+    hid = int(host_id)
+    if not query("""SELECT 1 FROM privacy p JOIN wu_results r ON r.user_id = p.user_id
+                     WHERE r.host_id = %s AND p.show_hosts LIMIT 1""", (hid,)):
+        return None
     rows = query("""SELECT day, points, wus_valid, wus_invalid, est_ppd, actual_ppd_7d FROM host_daily
-                    WHERE host_id = %s ORDER BY day DESC LIMIT 30""", (int(host_id),))
+                    WHERE host_id = %s ORDER BY day DESC LIMIT 30""", (hid,))
     if not rows:
         return None
-    tpf = query("""SELECT recorded_at, tpf_s FROM tpf_samples WHERE host_id = %s
-                   ORDER BY recorded_at DESC LIMIT 100""", (int(host_id),))
+    tpf = query("""SELECT date_trunc('day', recorded_at)::date, tpf_s FROM tpf_samples WHERE host_id = %s
+                   ORDER BY recorded_at DESC LIMIT 100""", (hid,))
     latest = rows[0]
-    return {"host_id": int(host_id), "est_ppd": latest[4], "actual_ppd_7d": latest[5],
+    return {"host_id": hid, "est_ppd": latest[4], "actual_ppd_7d": latest[5],
             "wus_valid_30d": sum(r[2] or 0 for r in rows), "wus_invalid_30d": sum(r[3] or 0 for r in rows),
-            "tpf_history": [{"at": str(at), "tpf_s": t} for at, t in tpf]}
+            "tpf_history": [{"day": str(day), "tpf_s": t} for day, t in tpf]}
 
 
 def member(table: str) -> Callable:
     def handler(query: Query, ident: str, qs) -> dict | None:
+        if table == "user_daily" and not query("SELECT 1 FROM privacy WHERE user_id = %s AND stats_export",
+                                               (int(ident),)):
+            return None  # the user has not consented to stats export
         rows = query(f"SELECT day, points, ppd, rank FROM {table} WHERE id = %s ORDER BY day DESC LIMIT 1", (int(ident),))
         if not rows:
             return None
@@ -94,10 +102,15 @@ ROUTES = [
     (re.compile(rf"^/api/v1/cascades/({WU_ID})/snapshots$"), snapshots),
 ]
 SNAPSHOT_FILE = re.compile(rf"^/api/v1/cascades/({WU_ID})/snapshots/0$")
+STORED_FILE = re.compile(rf"^{WU_ID}/[A-Za-z0-9_-][A-Za-z0-9_.-]*$")  # no "." or ".." names
 
 
-def make_app(query: Query, read_file: Callable[[str], bytes] = lambda p: Path(p).read_bytes()):
-    """WSGI app over a query function (injected, so tests need no database)."""
+def make_app(query: Query):
+    """WSGI app over a query function (injected, so tests need no database).
+
+    Snapshot files are handed to nginx with X-Accel-Redirect (internal location /_results/),
+    so a large file is never read into a Python worker.
+    """
     def respond(start, status: str, body: bytes, ctype: str = "application/json"):
         start(status, [("Content-Type", ctype), ("Content-Length", str(len(body))),
                        ("Cache-Control", "public, max-age=300"), ("X-Content-Type-Options", "nosniff")])
@@ -111,9 +124,11 @@ def make_app(query: Query, read_file: Callable[[str], bytes] = lambda p: Path(p)
         match = SNAPSHOT_FILE.match(path)
         if match:
             rows = query("SELECT snapshot_file FROM cascade_stats WHERE wu_id = %s", (match.group(1),))
-            if not rows or not rows[0][0]:
+            if not rows or not rows[0][0] or not STORED_FILE.match(rows[0][0]):
                 return respond(start, "404 Not Found", b'{"error": "not found"}')
-            return respond(start, "200 OK", read_file(rows[0][0]), "application/octet-stream")
+            start("200 OK", [("Content-Type", "application/octet-stream"), ("X-Content-Type-Options", "nosniff"),
+                             ("X-Accel-Redirect", f"/_results/{rows[0][0]}")])
+            return [b""]
         for pattern, handler in ROUTES:
             match = pattern.match(path)
             if match:
@@ -129,11 +144,25 @@ def make_app(query: Query, read_file: Callable[[str], bytes] = lambda p: Path(p)
     return app
 
 
+_conn = None
+
+
 def _pg_query(sql: str, args: tuple) -> list[tuple]:
-    import psycopg  # dependency: psycopg[binary] >= 3.1 (server only)
-    with psycopg.connect(os.environ["NAH_API_PG_DSN"]) as conn, conn.cursor() as cur:
-        cur.execute(sql, args)
-        return cur.fetchall()
+    """One read-only connection per worker process, reopened if it drops (no connection per query).
+    The nah_api login role also has a CONNECTION LIMIT, and nginx rate-limits requests."""
+    import psycopg  # dependency: psycopg[binary] (server only)
+    global _conn
+    for attempt in (1, 2):
+        try:
+            if _conn is None or _conn.closed:
+                _conn = psycopg.connect(os.environ["NAH_API_PG_DSN"], autocommit=True)
+            with _conn.cursor() as cur:
+                cur.execute(sql, args)
+                return cur.fetchall()
+        except psycopg.OperationalError:
+            _conn = None
+            if attempt == 2:
+                raise
 
 
 def application(environ, start):

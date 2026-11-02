@@ -36,6 +36,7 @@ stopping_file = "client/potentials/stopping_W.dat"
 
 [simulation]
 box_rule = [[1500.0, 4], [5000.0, 6]]
+fixed_cells = 1
 thermostat_cells = 1
 thermostat_damp_ps = 0.1
 dt_max_ps = 0.001
@@ -58,6 +59,7 @@ bootstrap_samples = 200
 [validator]
 min_md_steps = 100
 energy_tolerance = 0.01
+boundary_ke_flag_ev = 10.0
 population_test = "zscore"
 outlier_sigma = 4.0
 min_bin_samples = 5

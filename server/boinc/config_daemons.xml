@@ -1,8 +1,9 @@
 <!-- Fragment for the BOINC project's config.xml (inside <config> and <daemons>).
      Paths assume this repo is checked out at /opt/nuclear-at-home on the server.
-     VERIFY ON THE STAGING SERVER (Phase 9, T-082): the macro names script_validator and
-     script_assimilator pass (wu_id, runtime, files, files2), the exit-code meanings, and
-     whether BOINC's adaptive replication is on for the app (D3). -->
+     Script names are looked up in the project's bin/ (BOINC runs ../bin/<name>): install the
+     wrappers from server/boinc/bin/ there. Macros and exit codes checked against BOINC master
+     source (2026-11-01): init_script gets result_id/runtime/files; exit 3 = transient retry.
+     Still verify on staging: adaptive replication for the app (D3). -->
 <config>
   <reliable_on_priority>10</reliable_on_priority>  <!-- outlier confirmation WUs go to reliable hosts -->
 </config>
@@ -12,15 +13,15 @@
   <daemon><cmd>file_deleter -d 3</cmd></daemon>
   <daemon>
     <cmd>script_validator -d 3 --app nuclear_cascade --credit_from_wu
-      --init_script "python3 -I /opt/nuclear-at-home/validator/validate_init.py wu_id runtime files"
-      --compare_script "python3 -I /opt/nuclear-at-home/validator/validate_compare.py wu_id runtime files runtime2 files2"</cmd>
+      --init_script "nah_validate_init result_id runtime files"
+      --compare_script "nah_validate_compare"</cmd>
   </daemon>
   <daemon>
     <cmd>script_assimilator -d 3 --app nuclear_cascade
-      --script "python3 -I /opt/nuclear-at-home/server/assimilator.py wu_id files"</cmd>
+      --script "nah_assimilate wu_name files"</cmd>
   </daemon>
 </daemons>
 <!-- cron (project user), with flock so only one generator runs:
-     */10 * * * * flock -n /tmp/nah_wg.lock python3 -I /opt/nuclear-at-home/server/work_generator.py
+     */10 * * * * flock -n /home/boincadm/projects/nuclear/nah_wg.lock python3 -I /opt/nuclear-at-home/server/work_generator.py
      15 * * * *   python3 -I /opt/nuclear-at-home/stats/jobs.py hourly
      30 0 * * *   python3 -I /opt/nuclear-at-home/stats/jobs.py daily -->

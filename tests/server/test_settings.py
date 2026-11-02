@@ -19,7 +19,7 @@ class TestSettings(unittest.TestCase):
 
     def test_repo_settings_fail_closed(self):
         with self.assertRaises(TodoValue):
-            require(load(), "validator.energy_tolerance")
+            require(load(), "boinc.small.fpops_est")
 
     def test_load_reads_file(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -1,7 +1,7 @@
 // Three.js viewer for one finished cascade. Reads the sparse LAMMPS snapshot dump
 // (columns: id type x y z c_ke c_ws[1] f_ref[1] f_ref[2] f_ref[3]) from the read-only API.
 import * as THREE from "three";
-import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { OrbitControls } from "./vendor/OrbitControls.js";
 
 const $ = (id) => document.getElementById(id);
 const canvas = $("view");
@@ -22,15 +22,25 @@ scene.add(atoms, vacancies);
 let frames = [];
 let playing = false;
 
+const MAX_SNAPSHOT_BYTES = 150e6;  // same cap the server applies; snapshots come from volunteers
+
 async function readText(url) {
   const r = await fetch(url);
   if (!r.ok) throw new Error(`${url}: ${r.status}`);
   const bytes = new Uint8Array(await r.arrayBuffer());
-  if (bytes[0] === 0x1f && bytes[1] === 0x8b) {  // BOINC stores uploads gzipped
-    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
-    return new Response(stream).text();
+  if (!(bytes[0] === 0x1f && bytes[1] === 0x8b)) return new TextDecoder().decode(bytes);
+  // BOINC stores uploads gzipped: inflate in chunks and stop at the cap (no decompression bomb).
+  const reader = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip")).getReader();
+  const chunks = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.length;
+    if (total > MAX_SNAPSHOT_BYTES) { reader.cancel(); throw new Error("snapshot too large"); }
+    chunks.push(value);
   }
-  return new TextDecoder().decode(bytes);
+  return new TextDecoder().decode(await new Blob(chunks).arrayBuffer());
 }
 
 function parseDump(text) {

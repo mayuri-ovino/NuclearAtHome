@@ -107,6 +107,7 @@ def render_params(settings: dict, wu: dict) -> str:
         "pka_dx": wu["pka"]["direction"][0],
         "pka_dy": wu["pka"]["direction"][1],
         "pka_dz": wu["pka"]["direction"][2],
+        "fcells": require(settings, f"{sim}.fixed_cells"),
         "tcells": require(settings, f"{sim}.thermostat_cells"),
         "tdamp": require(settings, f"{sim}.thermostat_damp_ps"),
         "dt_max": dt_max,

@@ -1,6 +1,9 @@
 # Server-side Python dependencies (volunteers install nothing; they run BOINC's wrapper + LAMMPS).
-jsonschema>=4.10        # result and WU schema validation
-numpy>=1.26             # parsing and statistics
-scipy>=1.11             # periodic k-d tree for Wigner-Seitz and clustering
-psycopg[binary]>=3.1    # PostgreSQL (science/stats DB)
-PyMySQL>=1.1            # BOINC MariaDB (read-only use)
+# Exact pins: numpy/scipy/jsonschema parse hostile uploads. On the server, install with hashes:
+#   pip-compile --generate-hashes requirements-server.txt -o requirements-server.lock
+#   pip install --require-hashes -r requirements-server.lock
+jsonschema==4.10.3      # tested here
+numpy==1.26.4           # tested here
+scipy==1.11.4           # tested here
+psycopg[binary]==3.2.3  # not installed here; pin checked at first server install
+PyMySQL==1.1.1          # not installed here; pin checked at first server install

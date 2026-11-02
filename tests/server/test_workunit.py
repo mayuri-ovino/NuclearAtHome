@@ -41,8 +41,15 @@ class TestWorkunit(unittest.TestCase):
         self.assertEqual(float(params["max_time"]), 10.0)
 
     def test_undecided_settings_refuse(self):
+        s = settings()
+        s["simulation"]["dt_max_ps"] = "TODO-DECIDE"
         with self.assertRaises(TodoValue):
-            make_cascade_wu(load(), serial=1, energy_ev=1000.0, temperature_k=300.0, direction=(1, 0, 0), seed=1)
+            make_cascade_wu(s, serial=1, energy_ev=1000.0, temperature_k=300.0, direction=(1, 0, 0), seed=1)
+
+    def test_repo_settings_build_reference_wu_worth_1760_points(self):
+        record = make_cascade_wu(load(), serial=1, energy_ev=5000.0, temperature_k=300.0, direction=(1, 2, 3), seed=7)
+        self.assertEqual((record["size_tier"], record["box"]["n_atoms_expected"]), ("small", 250_000))
+        self.assertAlmostEqual(record["points"], 1760.0)
 
 
 if __name__ == "__main__":

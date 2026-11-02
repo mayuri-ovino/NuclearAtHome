@@ -58,14 +58,28 @@ def v1_schema(record, wu, ctx):
 
 
 def v2_integrity(record, wu, ctx):
-    """Echoed params match the params stored for this WU; every referenced file is hashed.
+    """The result belongs to this WU and is not a copy of another result.
 
+    Echoed params match the stored params; the PKA started on the box-centre site and first
+    moved along this WU's direction; no stored result has the same final.dump or energy.txt
+    (catches one honest result replayed for many WUs); every referenced file is hashed.
     Transfer integrity itself rests on BOINC's upload size limits and HTTPS.
     """
     if record["integrity"]["input_sha256"] != ctx["stored_params_sha256"]:
         return False, "params echoed in log.lammps differ from the WU's params"
+    if ctx.get("duplicate_of"):
+        return False, f"outputs identical to stored result {ctx['duplicate_of']}"
+    cascade = record["cascade"]
+    a0, cells = ctx["a0"], wu["box"]["unit_cells"][0]
+    site = [(cells // 2) * a0] * 3
+    if math.dist(cascade["pka_start"], site) > 0.25 * a0:
+        return False, "PKA did not start on the WU's site"
+    step = [f - s for f, s in zip(cascade["pka_first"], cascade["pka_start"])]
+    length = math.sqrt(sum(c * c for c in step))
+    cosine = sum(c * d for c, d in zip(step, wu["pka"]["direction"])) / length if length else -1.0
+    if not cosine > 0.9:
+        return False, f"PKA moved off the WU's direction (cos {cosine:.2f})"
     hashed = record["integrity"]["output_sha256"]
-    cascade = record.get("cascade", {})
     referenced = [cascade.get("defect_file"), cascade.get("final_config_file"), *cascade.get("snapshot_files", [])]
     missing = [name for name in referenced if name not in hashed]
     return (False, f"unhashed output files {missing}") if missing else (True, "ok")
@@ -98,8 +112,15 @@ def v4_energy(record, wu, ctx):
 
 
 def v5_stabilization(record, wu, ctx):
-    """Replay the template's stop rule: the reference count resets whenever a count differs from it
-    by more than the tolerance; the run is stable once no reset happened for a whole window."""
+    """A run that hit the time limit must really have reached it (valid even if not stabilized:
+    volunteers are not punished for physics they cannot control). An early stop must satisfy the
+    template's rule, replayed: the reference count resets whenever a count differs from it by more
+    than the tolerance; the run is stable once no reset happened for a whole window."""
+    run = record["run"]
+    if run["stop_reason"] == "hard_limit":
+        max_time = require(ctx["settings"], "simulation.max_time_ps")
+        reached = run["simulated_time_ps"] >= max_time * (1 - 1e-9)
+        return (True, "ok") if reached else (False, "stopped before the time limit")
     window = require(ctx["settings"], "simulation.stop_window_ps")
     tolerance = require(ctx["settings"], "simulation.stop_tolerance_pairs")
     history = record["cascade"]["defect_count_history"]
@@ -113,10 +134,14 @@ def v5_stabilization(record, wu, ctx):
 
 
 def v6_frenkel_balance(record, wu, ctx):
-    """Vacancies equal interstitials: no atoms created or lost."""
+    """Vacancies equal interstitials, and the client's own final count (LAMMPS Voronoi occupation)
+    equals the server's Wigner-Seitz count: for a bcc lattice both are the same analysis."""
     c = record["cascade"]
     if c["n_vacancies"] != c["n_interstitials"]:
         return False, f"{c['n_vacancies']} vacancies vs {c['n_interstitials']} interstitials"
+    client = c["defect_count_history"][-1][1]
+    if client != c["n_vacancies"]:
+        return False, f"client counted {client} Frenkel pairs, server {c['n_vacancies']}"
     return True, "ok"
 
 

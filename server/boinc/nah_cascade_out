@@ -1,17 +1,9 @@
-<!-- BOINC output template for cascade results. max_nbytes are upper bounds that stop
-     oversized uploads; tighten them once Phase 4 measures real sizes. Order matters:
+<!-- BOINC output template for cascade results. max_nbytes cap each gzipped upload (the server
+     also caps decompressed sizes: analysis/lammps_output.py MAX_BYTES). Tighten after measuring. Order matters:
      validator/validate_init.py maps files by these open names. -->
 <output_template>
   <file_info>
     <name><OUTFILE_0/></name>
-    <generated_locally/>
-    <upload_when_present/>
-    <max_nbytes>50000000</max_nbytes>
-    <url><UPLOAD_URL/></url>
-    <gzip_when_done/>
-  </file_info>
-  <file_info>
-    <name><OUTFILE_1/></name>
     <generated_locally/>
     <upload_when_present/>
     <max_nbytes>20000000</max_nbytes>
@@ -19,10 +11,18 @@
     <gzip_when_done/>
   </file_info>
   <file_info>
+    <name><OUTFILE_1/></name>
+    <generated_locally/>
+    <upload_when_present/>
+    <max_nbytes>10000000</max_nbytes>
+    <url><UPLOAD_URL/></url>
+    <gzip_when_done/>
+  </file_info>
+  <file_info>
     <name><OUTFILE_2/></name>
     <generated_locally/>
     <upload_when_present/>
-    <max_nbytes>5000000</max_nbytes>
+    <max_nbytes>2000000</max_nbytes>
     <url><UPLOAD_URL/></url>
     <gzip_when_done/>
   </file_info>
@@ -30,7 +30,7 @@
     <name><OUTFILE_3/></name>
     <generated_locally/>
     <upload_when_present/>
-    <max_nbytes>100000000</max_nbytes>
+    <max_nbytes>60000000</max_nbytes>
     <url><UPLOAD_URL/></url>
     <gzip_when_done/>
   </file_info>
@@ -38,7 +38,7 @@
     <name><OUTFILE_4/></name>
     <generated_locally/>
     <upload_when_present/>
-    <max_nbytes>200000000</max_nbytes>
+    <max_nbytes>60000000</max_nbytes>
     <url><UPLOAD_URL/></url>
     <gzip_when_done/>
   </file_info>

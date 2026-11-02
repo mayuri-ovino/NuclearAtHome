@@ -18,7 +18,9 @@ Base points:
 - `cost_factor`: relative cost per atom-step of each potential, measured on the
   reference machine (EAM = 1.0 by definition; ML potentials TODO-CALIBRATE).
 - `ref_work`, `ref_points`: the work and points of a reference WU.
-  TODO-DECIDE `ref_points`; TODO-CALIBRATE `ref_work`.
+  `ref_points` = 1760 (human decision). `ref_work` = work of the 5 keV reference WU by definition:
+  250,000 atoms × 30,000 planned steps (10,000 equilibration + 20,000 cascade at the 1 fs maximum) × 1.0 = 7.5e9.
+  Adaptive dt makes real step counts higher, so this under-credits rather than over-credits.
 - `md_steps` is the planned step count from the WU (or the server-verified
   completed count), never client-claimed time.
 - Points are fixed when the WU is created and stored in the WU's `points` field.
