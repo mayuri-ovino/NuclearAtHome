@@ -118,16 +118,33 @@ def daily(cur, day: dt.date, settings: dict, invalid_by_host: dict[int, int]) ->
 
 
 def award_badges(cur, settings: dict) -> None:
-    """Credit milestones. Other badges wait for their thresholds (TODO-DECIDE) and trapping (D1)."""
+    """Credit milestones, Reliable and Veteran (credit_spec.md 4). Tritium Hunter waits for trapping (D1)."""
     try:
         milestones = require(settings, "badges.credit_milestones")
+        last_n, min_rate = require(settings, "badges.reliable_last_n"), require(settings, "badges.reliable_min_rate")
+        veteran_days = require(settings, "badges.veteran_days")
     except TodoValue as error:
         print(f"badges skipped: {error}", file=sys.stderr)
         return
+    awards = []
     cur.execute("SELECT user_id, sum(points_awarded) FROM wu_results GROUP BY user_id")
-    for user, total in cur.fetchall():
-        for badge in milestones_reached(total, milestones):
-            cur.execute("INSERT INTO badges (user_id, badge_id) VALUES (%s, %s) ON CONFLICT DO NOTHING", (user, badge))
+    awards += [(user, badge) for user, total in cur.fetchall() for badge in milestones_reached(total, milestones)]
+    # Reliable: of the user's last N judged results (valid or invalid), at least min_rate valid.
+    cur.execute("""SELECT user_id, count(*), count(*) FILTER (WHERE status = 'valid') FROM (
+                     SELECT h.user_id, r.status, row_number() OVER (PARTITION BY h.user_id ORDER BY r.reported_at DESC) AS k
+                     FROM host_results r JOIN hosts h USING (host_id) WHERE r.status IN ('valid', 'invalid')) recent
+                   WHERE k <= %s GROUP BY user_id""", (last_n,))
+    awards += [(user, "reliable") for user, n, valid in cur.fetchall() if reliable(n, valid, last_n, min_rate)]
+    cur.execute("SELECT user_id FROM wu_results WHERE validated GROUP BY user_id "
+                "HAVING min(reported_at) <= now() - make_interval(days => %s)", (veteran_days,))
+    awards += [(user, "veteran") for (user,) in cur.fetchall()]
+    for user, badge in awards:
+        cur.execute("INSERT INTO badges (user_id, badge_id) VALUES (%s, %s) ON CONFLICT DO NOTHING", (user, badge))
+
+
+def reliable(judged: int, valid: int, last_n: int, min_rate: float) -> bool:
+    """A full window of last_n judged results with at least min_rate of them valid."""
+    return judged >= last_n and valid >= min_rate * judged
 
 
 def science_aggregates(cur, settings: dict) -> None:

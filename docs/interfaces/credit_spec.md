@@ -31,7 +31,8 @@ Base points:
     awarded    = base_points × multiplier      (if validated, else 0)
 
 - `elapsed_s` is measured by the SERVER (send time to report time).
-- `k`, `cap`: TODO-DECIDE. Hosts with trust score below a threshold get multiplier 1.
+- Not in the alpha: multiplier = 1 for every result. `k` and `cap` are decided with the speed bonus
+  after the alpha. Hosts with trust score below a threshold will get multiplier 1.
 
 ## 3. TPF and PPD
 
@@ -51,10 +52,10 @@ Worked example: 1,000-point WU, TPF = 180 s → PPD = 1000 × 86400 / 18000 = 4,
 
 | Badge | Condition | Thresholds |
 |---|---|---|
-| Credit milestones (Lithium → Beryllium → Breeder → Ignition) | Total validated points | TODO-DECIDE |
-| Tritium Hunter | Validated trapping WUs | TODO-DECIDE |
-| Reliable | Validation rate over last N results | N and rate TODO-DECIDE |
-| Veteran | Days active | TODO-DECIDE |
+| Credit milestones (Lithium → Beryllium → Breeder → Ignition) | Total validated points | 10,000 / 100,000 / 1,000,000 / 10,000,000 |
+| Tritium Hunter | Validated trapping WUs | stage B (trapping not in the alpha) |
+| Reliable | Validation rate over last N results | N = 50, rate ≥ 98% |
+| Veteran | Days active | 365 days since the first validated result |
 | Discovery (honorary) | See section 5 | — |
 
 ## 5. Discovery credit (honorary, no points)

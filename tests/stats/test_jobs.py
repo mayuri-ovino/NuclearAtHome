@@ -1,6 +1,6 @@
 import unittest
 
-from stats.jobs import gpus_from_serialnum, host_est_ppd, milestones_reached, result_status
+from stats.jobs import gpus_from_serialnum, host_est_ppd, milestones_reached, reliable, result_status
 
 
 class TestJobs(unittest.TestCase):
@@ -26,6 +26,11 @@ class TestJobs(unittest.TestCase):
         milestones = [["lithium", 100.0], ["beryllium", 1000.0]]
         self.assertEqual(milestones_reached(150.0, milestones), ["lithium"])
         self.assertEqual(milestones_reached(50.0, milestones), [])
+
+    def test_reliable(self):
+        self.assertTrue(reliable(50, 49, 50, 0.98))
+        self.assertFalse(reliable(50, 48, 50, 0.98))
+        self.assertFalse(reliable(10, 10, 50, 0.98))  # too few results to judge
 
 
 if __name__ == "__main__":

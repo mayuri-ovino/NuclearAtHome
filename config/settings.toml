@@ -71,10 +71,10 @@ ref_points = 1760.0                       # human decision 2026-11-01
 ref_work = 7.5e9                          # work of the 5 keV reference WU: 250,000 atoms x 30,000 planned steps x 1.0
 
 [badges]
-credit_milestones = "TODO-DECIDE"         # list of [badge_id, total_points], ascending
-reliable_last_n = "TODO-DECIDE"
-reliable_min_rate = "TODO-DECIDE"
-veteran_days = "TODO-DECIDE"
+credit_milestones = [["lithium", 10000], ["beryllium", 100000], ["breeder", 1000000], ["ignition", 10000000]]  # credit_spec.md 4
+reliable_last_n = 50                      # credit_spec.md 4
+reliable_min_rate = 0.98
+veteran_days = 365
 
 [boinc]
 app_name = "nuclear_cascade"

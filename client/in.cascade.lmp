@@ -128,9 +128,11 @@ if "${n_restarts} == 0" then &
   "print '$(step) $(time) $(c_nvac) $(c_keb)' append history.txt screen no"
 
 label           loop
-run             ${check_steps}
+run             ${check_steps} pre no post no  # no re-setup per chunk: per-run GPU setup leaked ~17 MB each (2.6 GB per 150 runs, 128k atoms)
 variable        thermo_rm equal $(v_thermo_rm+f_th)
-variable        elec_loss equal $(v_elec_loss+f_es)
+# With pre no, f_es (electron/stopping) keeps summing from the last full setup (the run 0 above),
+# while f_th (langevin tally) restarts each run; both measured 2026-11-02, LAMMPS 29Aug2024.
+variable        elec_loss equal $(v_off_elec+f_es)
 variable        icheck equal $(v_icheck+1)
 print           "$(step) $(time) $(etotal) $(v_thermo_rm) $(v_elec_loss)" append energy.txt screen no
 print           "$(step) $(time) $(c_nvac) $(c_keb)" append history.txt screen no

@@ -17,9 +17,12 @@ class TestSettings(unittest.TestCase):
             with self.subTest(key=key), self.assertRaises(TodoValue):
                 require(self.s, key)
 
-    def test_repo_settings_fail_closed(self):
-        with self.assertRaises(TodoValue):
-            require(load(), "badges.veteran_days")
+    def test_repo_badge_thresholds_set(self):
+        # Fail-closed behaviour is covered by test_todo_and_missing_raise; the repo has no TODO left here.
+        settings = load()
+        self.assertEqual(require(settings, "badges.veteran_days"), 365)
+        milestones = require(settings, "badges.credit_milestones")
+        self.assertEqual([t for _, t in milestones], sorted(t for _, t in milestones))
 
     def test_load_reads_file(self):
         with tempfile.TemporaryDirectory() as tmp:

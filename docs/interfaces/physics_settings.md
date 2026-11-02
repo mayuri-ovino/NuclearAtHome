@@ -39,7 +39,7 @@ to DFT or experiment with sources.
 | Thermostat | Edge layer only: 2 unit cells, Langevin damping 0.1 ps (damping is a convention; not given in the benchmark papers) | |
 | Timestep | Adaptive (`fix dt/reset`), max displacement 0.005 Å per step (Setyawan 2015 Sec. 2), max timestep 1 fs (Warrier & Bhardwaj) | Smoke runs conserve energy to ~2e-4 of the PKA energy |
 | Equilibration before PKA | 10 ps Langevin at T in a box at the measured 300 K lattice constant (Warrier & Bhardwaj use 10 ps NPT; equivalent at 300 K only) | |
-| Stop condition | Frenkel pair count stable within TODO-DECIDE over TODO-DECIDE ps, with a hard maximum time of 20 ps (Warrier & Bhardwaj NVE length). Decision: no early stop (window = 20 ps), so every run is 20 ps like the benchmark | |
+| Stop condition | Fixed length: every run is 20 ps after the PKA (Warrier & Bhardwaj NVE length), no early stop (decision log) | |
 | Checkpoint interval | every 20 checks of 100 steps (2,000 steps) | measure wall time per checkpoint in calibration |
 | PKA direction | Uniformly random on the unit sphere, no channeling exclusion | Matches the benchmark's random directions; channeling events are physics |
 | PKA energy sampling | From recoil spectrum file (human supplies) | Spectrum ID recorded per WU |
@@ -87,6 +87,7 @@ to DFT or experiment with sources.
 | 2026-11-02 | V4 = drift / (E_PKA + thermostat-removed energy) ≤ 1% | 5 keV calibration run: drift 36.6 eV grew with the 3.9 keV the thermostat removed (Langevin tally ~1% inexact), stopping added ~3 eV; drift/flow 4.1e-3. Per PKA energy it was 7.3e-3, which wrongly failed an honest run | main agent |
 | 2026-11-02 | GPU app version (core 0xa2): LAMMPS GPU package over OpenCL, full double precision, only pair eam/fs on the GPU | Human chose OpenCL first. Checked on an RTX 4070: perfect-lattice total energy identical to CPU (−142,398.97 eV), V4 drift 9.1e-4 (limit 1e-2), 2.7× faster on a 16,000-atom test while the GPU was shared with Folding@home | main agent |
 | 2026-11-02 | GPU version 1.01: neighbour lists on the CPU (`-pk gpu 1 neigh no`) | GPU-built lists crashed (OpenCL -9999) at step ~5,300 of a real 5 keV run, deterministically; with `neigh no` the full run passed V1-V8 (V4 drift/flow 3.9e-3), 34 min vs 97 on CPU. Cost: 13 GB peak host RAM, too much for typical volunteers: must be reduced before public release | main agent |
+| 2026-11-02 | Cascade loop runs chunks with `run N pre no post no` | Each `run` re-setup leaked ~17 MB of host RAM in the NVIDIA OpenCL driver (13 GB per cascade). Without re-setup: peak 536 MB, 30 min; same 5 keV WU passes V4 (3.6e-3 vs 3.9e-3 before), 5 FP both. `f_es` then sums from the last full setup, so `elec_loss = off_elec + f_es` (measured); `f_th` still restarts each run. Physics review: approve, dt is no longer recomputed at chunk boundaries (trajectory-level only) | main agent, physics-reviewer |
 | 2026-11-02 | Setyawan values verified in the paper (a0 300 K, 0.005 Å, NN3/NN4) | Human supplied the papers | main agent |
 | 2026-11-01 | a0 = 3.1674 Å, measured (NPT, 300 K, 0 bar) with this potential | Measurement; matches Setyawan's 3.167 Å for JW at 300 K | main agent |
 | 2026-11-01 | Fixed outer cell + 2-cell thermostat, 1 fs max timestep, 10 ps equilibration, 20 ps runs | Warrier & Bhardwaj protocol (read directly) | main agent |

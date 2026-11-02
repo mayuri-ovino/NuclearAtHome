@@ -27,6 +27,10 @@ def fake_query(sql, args):
     if "FROM host_results" in sql:
         return [("WA-0001-00000002", "opencl_nvidia_101", "running", "2026-11-02", None, False),
                 ("WA-0001-00000001", "", "valid", "2026-11-01", "2026-11-02", True)]
+    if "count(DISTINCT user_id)" in sql:  # team 3 has two contributors, team 4 only one
+        return [(2,)] if args == (3,) else [(1,)]
+    if "FROM team_daily" in sql:
+        return [("2026-11-01", 20.0, 2.8, 1)]
     if "count(DISTINCT host_id)" in sql:
         return [(3,)]
     if "count(*) / 7.0" in sql:
@@ -70,6 +74,10 @@ class TestAPI(unittest.TestCase):
                          (1, "0xa2", "GPU", "running"))
         self.assertEqual((cpu_task["core"], cpu_task["resource"], cpu_task["has_3d"]), ("0xa1", "CPU", True))
         self.assertNotIn("domain_name", json.dumps(body))
+
+    def test_team_shown_only_with_two_members(self):
+        self.assertEqual(call("/api/v1/teams/3")[0], "200 OK")
+        self.assertEqual(call("/api/v1/teams/4")[0], "404 Not Found")
 
     def test_unknown_host_404(self):
         self.assertEqual(call("/api/v1/hosts/6")[0], "404 Not Found")

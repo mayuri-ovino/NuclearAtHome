@@ -83,11 +83,17 @@ def _core(plan_class: str) -> dict:
     return {"core": core.get("id", "?"), "resource": core.get("resource", "?")}
 
 
+MIN_TEAM_MEMBERS = 2  # contributing users before a team total is shown (privacy.md)
+
+
 def member(table: str) -> Callable:
     def handler(query: Query, ident: str, qs) -> dict | None:
         if table == "user_daily" and not query("SELECT 1 FROM privacy WHERE user_id = %s AND stats_export",
                                                (int(ident),)):
             return None  # the user has not consented to stats export
+        if table == "team_daily" and query("SELECT count(DISTINCT user_id) FROM wu_results WHERE team_id = %s AND user_id <> 0",
+                                           (int(ident),))[0][0] < MIN_TEAM_MEMBERS:
+            return None  # a one-person team's total would show that person's points
         rows = query(f"SELECT day, points, ppd, rank FROM {table} WHERE id = %s ORDER BY day DESC LIMIT 1", (int(ident),))
         if not rows:
             return None
