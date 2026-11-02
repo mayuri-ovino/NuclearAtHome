@@ -40,10 +40,12 @@ make yes-manybody yes-extra-fix yes-voronoi
 if [ "$variant" = gpu ]; then
   make yes-gpu
   make -j "$(nproc)" serial LINKFLAGS="-O2"
-  out="$repo/client/app_version/lmp_nah_stable_${VERSION}_opencl"
+  out="$repo/client/app_version/lmp_nah_stable_${VERSION}_opencl_r2"
 else
   make -j "$(nproc)" serial LINKFLAGS="-O2 -static"
-  out="$repo/client/app_version/lmp_nah_stable_${VERSION}"
+  out="$repo/client/app_version/lmp_nah_stable_${VERSION}_r2"
 fi
-install -m 0755 lmp_serial "$out"
+# -s strips debug symbols: 93 MB -> 11 MB, same code. r2 = first stripped build (BOINC files are
+# immutable under one name, so a changed binary needs a new name).
+install -s -m 0755 lmp_serial "$out"
 sha256sum "$out"

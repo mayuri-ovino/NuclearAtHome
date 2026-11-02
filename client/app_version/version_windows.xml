@@ -6,10 +6,12 @@
   <file>
     <physical_name>wrapper_26019_windows_x86_64.exe</physical_name>
     <main_program/>
+    <gzip/>
   </file>
   <file>
     <physical_name>lmp_nah_stable_29Aug2024_windows.exe</physical_name>
     <logical_name>lmp</logical_name>
+    <gzip/>
   </file>
   <file>
     <physical_name>job_nah_cascade_1.xml</physical_name>

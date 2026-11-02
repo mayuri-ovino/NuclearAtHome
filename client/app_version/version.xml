@@ -3,15 +3,18 @@
      __opencl_ati_101 / __opencl_intel_gpu_102), with lmp_nah_stable_29Aug2024_opencl as lmp and
      client/job_opencl.xml as job.xml.
      Files in the version directory: the wrapper binary, lmp (static LAMMPS from
-     client/build_lammps.sh), job.xml. Each file is signed on the offline machine. -->
+     client/build_lammps.sh), job.xml. Each file is signed on the offline machine.
+     <gzip/>: BOINC sends the file gzipped and the client unpacks it (LAMMPS 11 MB -> 4.5 MB). -->
 <version>
   <file>
     <physical_name>wrapper_26018_x86_64-pc-linux-gnu</physical_name>
     <main_program/>
+    <gzip/>
   </file>
   <file>
-    <physical_name>lmp_nah_stable_29Aug2024</physical_name>
+    <physical_name>lmp_nah_stable_29Aug2024_r2</physical_name>
     <logical_name>lmp</logical_name>
+    <gzip/>
   </file>
   <file>
     <physical_name>job_nah_cascade_1.xml</physical_name>

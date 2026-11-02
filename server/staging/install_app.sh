@@ -8,27 +8,22 @@ src=/opt/nuclear-at-home
 # write download/ files into this throwaway container instead of the project.
 rm -rf "$PROJECT_ROOT" && ln -s "$PROJECT_ROOT.dst" "$PROJECT_ROOT"
 cd "$PROJECT_ROOT"
-v=apps/nuclear_cascade/1.0/x86_64-pc-linux-gnu
-mkdir -p "$v"
-cp "$src/client/app_version/wrapper_26018_x86_64-pc-linux-gnu" "$src/client/app_version/lmp_nah_stable_29Aug2024" \
-   "$src/client/app_version/version.xml" "$v/"
-cp "$src/client/job.xml" "$v/job_nah_cascade_1.xml"
-# GPU version (OpenCL, core 0xa2), if it has been built: bash client/build_lammps.sh <dir> gpu
-g=apps/nuclear_cascade/1.01/x86_64-pc-linux-gnu__opencl_nvidia_101  # 1.01: neigh no (1.0 crashed)
-if [ -f "$src/client/app_version/lmp_nah_stable_29Aug2024_opencl" ]; then
-  mkdir -p "$g"
-  cp "$src/client/app_version/wrapper_26018_x86_64-pc-linux-gnu" "$src/client/app_version/lmp_nah_stable_29Aug2024_opencl" "$g/"
-  cp "$src/client/app_version/version_opencl.xml" "$g/version.xml"
-  cp "$src/client/job_opencl.xml" "$g/job_nah_cascade_opencl_2.xml"
-fi
-# Windows x86_64 CPU version, if it has been built: bash client/build_lammps_windows.sh <dir>
-w=apps/nuclear_cascade/1.02/windows_x86_64  # 1.02: first Windows version
-if [ -f "$src/client/app_version/lmp_nah_stable_29Aug2024_windows.exe" ]; then
-  mkdir -p "$w"
-  cp "$src/client/app_version/wrapper_26019_windows_x86_64.exe" "$src/client/app_version/lmp_nah_stable_29Aug2024_windows.exe" "$w/"
-  cp "$src/client/app_version/version_windows.xml" "$w/version.xml"
-  cp "$src/client/job.xml" "$w/job_nah_cascade_1.xml"
-fi
+# App versions, 1.03 for every platform: stripped Linux builds and gzipped downloads (1.0-1.02 stay in
+# the database for tasks already sent). Each is installed if its binary has been built.
+a="$src/client/app_version"
+install_version() {  # <dir> <version.xml> <job.xml> <job physical name> <files...>
+  local dir=apps/nuclear_cascade/1.03/$1 version=$2 job=$3 job_name=$4; shift 4
+  for f in "$@"; do [ -f "$a/$f" ] || return 0; done
+  mkdir -p "$dir" && for f in "$@"; do cp "$a/$f" "$dir/"; done
+  cp "$a/$version" "$dir/version.xml" && cp "$src/client/$job" "$dir/$job_name"
+}
+# CPU: bash client/build_lammps.sh <dir>; GPU (OpenCL, core 0xa2): ... <dir> gpu; Windows: build_lammps_windows.sh
+install_version x86_64-pc-linux-gnu version.xml job.xml job_nah_cascade_1.xml \
+  wrapper_26018_x86_64-pc-linux-gnu lmp_nah_stable_29Aug2024_r2
+install_version x86_64-pc-linux-gnu__opencl_nvidia_101 version_opencl.xml job_opencl.xml job_nah_cascade_opencl_3.xml \
+  wrapper_26018_x86_64-pc-linux-gnu lmp_nah_stable_29Aug2024_opencl_r2
+install_version windows_x86_64 version_windows.xml job.xml job_nah_cascade_1.xml \
+  wrapper_26019_windows_x86_64.exe lmp_nah_stable_29Aug2024_windows.exe
 cp "$src/server/boinc/nah_cascade_in" "$src/server/boinc/nah_cascade_out" templates/
 cp "$src/server/boinc/bin/"nah_* bin/
 python3 "$src/server/staging/add_app.py" .
