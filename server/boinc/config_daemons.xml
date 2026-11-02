@@ -5,7 +5,9 @@
      source (2026-11-01): init_script gets result_id/runtime/files; exit 3 = transient retry.
      Still verify on staging: adaptive replication for the app (D3). -->
 <config>
-  <reliable_on_priority>10</reliable_on_priority>  <!-- outlier confirmation WUs go to reliable hosts -->
+  <!-- Replicas must go to different volunteers, or quorum 2 checks nothing (cheating defence).
+       Off in local staging only, so one machine can run both replicas. -->
+  <one_result_per_user_per_wu/>
 </config>
 <daemons>
   <daemon><cmd>feeder -d 3</cmd></daemon>

@@ -26,6 +26,8 @@ def load(path: Path | None = None) -> dict:
         settings = tomllib.load(handle)
     if os.environ.get("NAH_SCIENCE_DIR"):  # local hosting: a user-writable science directory
         settings["storage"]["science_dir"] = os.environ["NAH_SCIENCE_DIR"]
+    if os.environ.get("NAH_BOINC_PROJECT_DIR"):  # staging: the BOINC project inside its container
+        settings["boinc"]["project_dir"] = os.environ["NAH_BOINC_PROJECT_DIR"]
     return settings
 
 

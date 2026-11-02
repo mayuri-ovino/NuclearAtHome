@@ -35,3 +35,4 @@ Thumbs.db
 
 # Built LAMMPS binaries (publish via BOINC app versions, not git)
 client/app_version/lmp_*
+client/app_version/wrapper_*

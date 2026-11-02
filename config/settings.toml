@@ -18,7 +18,7 @@ temperatures_k = [300.0]                  # benchmark temperature
 target_per_bin = 100                      # Warrier & Bhardwaj: 100 directions per energy
 canary_fraction = 0.02                    # decision log: 2% of WUs
 size_tiers = [[260000, "small"], [5000000, "large"]]  # [max atoms, tier]; PROMPT.md: Small ~250k atoms, Large 1-5M
-max_in_flight = "TODO-DECIDE"             # WUs created but not yet assimilated
+max_in_flight = 20                        # WUs created but not yet assimilated (ops; raise for the public alpha)
 
 [potentials.W_EAM_A]
 lattice = "bcc"
@@ -86,7 +86,9 @@ result_template = "templates/nah_cascade_out"
 # shortcut: fpops_est assumes 5e9 FLOPS per core (typical BOINC Whetstone for a modern i7); replace with this
 # laptop's BOINC benchmark once a BOINC client runs here. bound = 10x est so slow hosts are not aborted.
 small = { fpops_est = 2.9e13, fpops_bound = 2.9e14, memory_bytes = 1e9, delay_bound_s = 604800 }
-large = { fpops_est = "TODO-CALIBRATE", fpops_bound = "TODO-CALIBRATE", memory_bytes = "TODO-CALIBRATE", delay_bound_s = "TODO-DECIDE" }
+# large: shortcut: scaled from the 5 keV measurement by atoms (843,750 / 250,000 = 3.375x), not measured;
+# replace after a 10 keV calibration run.
+large = { fpops_est = 9.8e13, fpops_bound = 9.8e14, memory_bytes = 2e9, delay_bound_s = 1209600 }
 min_quorum = 2                            # validator_spec.md: new hosts always replicated
 target_nresults = 2
 

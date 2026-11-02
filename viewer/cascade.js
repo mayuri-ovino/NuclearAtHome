@@ -69,6 +69,7 @@ function parseDump(text) {
   for (let i = 0; i + 1 < lines.length && lines[i] === "ITEM: TIMESTEP";) {
     const step = Number(lines[i + 1]);
     const n = Number(lines[i + 3]);
+    if (i + 9 + n > lines.length || !lines[i + 8 + n]) break;  // live file: last frame still being written
     const cols = lines[i + 8].split(/\s+/).slice(2);
     const at = (name) => cols.indexOf(name);
     const idx = { x: at("x"), y: at("y"), z: at("z"), ke: at("c_ke"), occ: at("c_ws[1]"),
@@ -135,7 +136,15 @@ async function open(wu) {
       ...fact("Points", Math.round(meta.points).toLocaleString()), ...fact("Step", "–", "f-step"));
     frames = parseDump(await readText(meta.files[0]));
     if (!frames.length) throw new Error("no snapshot frames");
+    frameCamera();
+    show(frames.length - 1);  // open on the surviving defects; Play replays the cascade
+  } catch (e) {
+    $("error").textContent = `Could not open the cascade: ${e.message}`;
+  }
+}
 
+// Fit the grid, fog and the three camera views to the cascade's bounding box.
+function frameCamera() {
     const box = new THREE.Box3();
     for (const f of frames) for (const r of f.rows) box.expandByPoint(new THREE.Vector3(r[f.idx.x], r[f.idx.y], r[f.idx.z]));
     const center = box.getCenter(new THREE.Vector3());
@@ -152,9 +161,25 @@ async function open(wu) {
              center.clone().add(new THREE.Vector3(d, 0, 0))];
     views.center = center;
     setView(0);
-    show(frames.length - 1);  // open on the surviving defects; Play replays the cascade
+}
+
+// Live mode: a task running on this computer, served read-only by scripts/serve.py (NAH_LIVE_DIR).
+async function pollLive() {
+  try {
+    const progress = Number(await (await fetch("/live/progress.txt", { cache: "no-store" })).text());
+    const r = await fetch("/live/snapshots.dump", { cache: "no-store" });
+    const fresh = r.ok ? parseDump(await r.text()) : [];
+    const following = current >= frames.length - 1;
+    const first = !frames.length && fresh.length;
+    frames = fresh;
+    $("facts").replaceChildren(...fact("Work unit", "running on this computer"),
+      ...fact("Progress", Number.isFinite(progress) ? `${(progress * 100).toFixed(1)}% of 20 ps` : "warming up"),
+      ...fact("Frames", frames.length || "none yet (cascade starts after the 10 ps warm-up)"), ...fact("Step", "–", "f-step"));
+    if (first) frameCamera();
+    if (frames.length) show(following ? frames.length - 1 : current);
+    $("error").textContent = "";
   } catch (e) {
-    $("error").textContent = `Could not open the cascade: ${e.message}`;
+    $("error").textContent = `Live view unavailable: ${e.message}`;
   }
 }
 
@@ -196,5 +221,12 @@ addEventListener("keydown", (e) => {
   if (e.key === " ") { e.preventDefault(); setPlaying(!playing); }
 });
 $("pick").addEventListener("submit", (e) => { e.preventDefault(); open($("wu").value.trim()); });
-const initial = new URLSearchParams(location.search).get("wu");
-if (initial) { $("wu").value = initial; open(initial); }
+const params = new URLSearchParams(location.search);
+if (params.has("live")) {
+  $("pick").hidden = true;
+  pollLive();
+  setInterval(pollLive, 10000);
+} else if (params.get("wu")) {
+  $("wu").value = params.get("wu");
+  open(params.get("wu"));
+}

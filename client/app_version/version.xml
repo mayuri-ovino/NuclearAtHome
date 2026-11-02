@@ -6,7 +6,7 @@
      client/build_lammps.sh), job.xml. Each file is signed on the offline machine. -->
 <version>
   <file>
-    <physical_name>wrapper_26016_x86_64-pc-linux-gnu</physical_name>
+    <physical_name>wrapper_26018_x86_64-pc-linux-gnu</physical_name>
     <main_program/>
   </file>
   <file>

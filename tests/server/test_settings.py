@@ -19,7 +19,7 @@ class TestSettings(unittest.TestCase):
 
     def test_repo_settings_fail_closed(self):
         with self.assertRaises(TodoValue):
-            require(load(), "boinc.large.fpops_est")
+            require(load(), "badges.veteran_days")
 
     def test_load_reads_file(self):
         with tempfile.TemporaryDirectory() as tmp:

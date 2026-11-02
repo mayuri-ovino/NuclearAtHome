@@ -7,6 +7,7 @@
           --head: #070d16; --head-fg: #e3e9f0; --accent: #34c4d8; --accent-ink: #6fd8e6; --err: #e57a5c; }
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.5 system-ui, sans-serif; }
 a { color: var(--accent-ink); }
 

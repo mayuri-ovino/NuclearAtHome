@@ -5,6 +5,10 @@ Standard library only (no nginx needed locally). Production and the Raspberry Pi
 gunicorn instead (docs/deploy.md). Binds to 127.0.0.1 only.
 
     NAH_API_PG_DSN="dbname=nuclear" NAH_SCIENCE_DIR=~/nah-science python3 scripts/serve.py [port]
+
+Live view of a task running on this computer: set NAH_LIVE_DIR to its BOINC slot folder
+(e.g. /var/lib/boinc-client/slots/0, readable with `sg boinc`) and open /cascade.html?live=1.
+Only snapshots.dump, progress.txt and history.txt are served from it.
 """
 import mimetypes
 import os
@@ -22,6 +26,8 @@ from stats.api import application as api  # noqa: E402
 VIEWER = ROOT / "viewer"
 RESULTS = Path(load()["storage"]["science_dir"]) / "results"
 HEADERS = [("X-Content-Type-Options", "nosniff"), ("Referrer-Policy", "no-referrer")]
+LIVE_DIR = Path(os.environ["NAH_LIVE_DIR"]) if os.environ.get("NAH_LIVE_DIR") else None
+LIVE_FILES = {"snapshots.dump", "progress.txt", "history.txt"}
 
 
 def file_under(base: Path, rel: str) -> Path | None:
@@ -42,14 +48,18 @@ def app(environ, start):
         target = file_under(RESULTS, accel[len("/_results/"):])  # nginx's internal handoff, done here locally
     elif path.startswith("/_results/"):
         target = None  # internal only, like nginx's "internal" location
+    elif path.startswith("/live/"):
+        name = path[len("/live/"):]
+        target = file_under(LIVE_DIR, name) if LIVE_DIR and name in LIVE_FILES else None
     else:
         target = file_under(VIEWER, path.lstrip("/") or "index.html")
     if target is None:
         start("404 Not Found", [("Content-Type", "text/plain")] + HEADERS)
         return [b"not found"]
     ctype = mimetypes.guess_type(target.name)[0] or "application/octet-stream"
-    start("200 OK", [("Content-Type", ctype), ("Content-Length", str(target.stat().st_size))] + HEADERS)
-    return [target.read_bytes()]
+    data = target.read_bytes()  # one read: a live file may grow while we serve it
+    start("200 OK", [("Content-Type", ctype), ("Content-Length", str(len(data))), ("Cache-Control", "no-store")] + HEADERS)
+    return [data]
 
 
 class ThreadingServer(ThreadingMixIn, WSGIServer):

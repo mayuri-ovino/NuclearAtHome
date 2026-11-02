@@ -70,7 +70,7 @@ def create_work(settings: dict, project_dir: Path, wu: dict, params_name: str, s
            "--delay_bound", str(require(settings, f"{b}.{tier}.delay_bound_s")),
            "--min_quorum", str(require(settings, f"{b}.min_quorum")),
            "--target_nresults", str(require(settings, f"{b}.target_nresults")),
-           "--additional_xml", f"<credit>{wu['points']:.6f}</credit>",
+           "--credit", f"{wu['points']:.6f}",  # sets wu.canonical_credit, which --credit_from_wu grants (sched/validator.cpp)
            shared[0], params_name, *shared[1:]]
     subprocess.run(cmd, cwd=project_dir, check=True)
 
