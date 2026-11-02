@@ -58,5 +58,10 @@ class ThreadingServer(ThreadingMixIn, WSGIServer):
 
 if __name__ == "__main__":
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8080
+    try:
+        server = make_server("127.0.0.1", port, app, server_class=ThreadingServer)
+    except OSError as error:
+        sys.exit(f"Port {port} is busy ({error.strerror}). Stop the other server, or pick a port: "
+                 f"python3 scripts/serve.py {port + 10}")
     print(f"Nuclear@Home on http://127.0.0.1:{port}/  (Ctrl+C to stop)")
-    make_server("127.0.0.1", port, app, server_class=ThreadingServer).serve_forever()
+    server.serve_forever()
