@@ -18,6 +18,10 @@ def fake_query(sql, args):
         return [("2026-11-01", 10.0, 1.4, 1)]
     if "FROM badges" in sql:
         return [("lithium",)]
+    if "sum(points_awarded), 0)" in sql:
+        return [(4, 7040.0)]
+    if "ORDER BY r.reported_at DESC" in sql:
+        return [("WA-0001-00000001", 5000.0, 300.0, 9, 1760.0, "2026-11-02")]
     if "count(DISTINCT host_id)" in sql:
         return [(3,)]
     if "count(*) / 7.0" in sql:
@@ -63,6 +67,16 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(json.loads(call("/api/v1/project/summary")[1])["active_hosts_7d"], 3)
         bins = json.loads(call("/api/v1/science/cascades", query="material=W&energy_bin=500,1500")[1])["bins"]
         self.assertEqual(bins[0]["mean_frenkel"], 2.0)
+
+    def test_summary_totals_and_campaign(self):
+        body = json.loads(call("/api/v1/project/summary")[1])
+        self.assertEqual((body["total_wus"], body["total_points"]), (4, 7040.0))
+        self.assertEqual(body["campaign"]["target_per_bin"], 100)
+
+    def test_recent_workunits_have_no_host_or_user(self):
+        wu = json.loads(call("/api/v1/workunits/recent")[1])["workunits"][0]
+        self.assertEqual(wu["frenkel_pairs"], 9)
+        self.assertFalse({"host_id", "user_id"} & set(wu))
 
     def test_bad_parameter_400(self):
         self.assertEqual(call("/api/v1/science/cascades", query="energy_bin=abc")[0], "400 Bad Request")

@@ -15,8 +15,8 @@ sun.position.set(1, 2, 3);
 scene.add(sun);
 
 const MAX = 200000;
-const atoms = new THREE.InstancedMesh(new THREE.SphereGeometry(0.6, 10, 8), new THREE.MeshLambertMaterial(), MAX);
-const vacancies = new THREE.InstancedMesh(new THREE.BoxGeometry(0.8, 0.8, 0.8),
+const atoms = new THREE.InstancedMesh(new THREE.SphereGeometry(1.0, 12, 10), new THREE.MeshLambertMaterial(), MAX);
+const vacancies = new THREE.InstancedMesh(new THREE.BoxGeometry(1.4, 1.4, 1.4),
   new THREE.MeshLambertMaterial({ color: 0x8a8a84 }), MAX);
 scene.add(atoms, vacancies);
 let frames = [];
@@ -95,12 +95,15 @@ async function open(wu) {
     frames = parseDump(await readText(meta.files[0]));
     if (!frames.length) throw new Error("no snapshot frames");
     $("frame").max = frames.length - 1;
-    $("frame").value = 0;
-    const all = frames.flatMap((f) => f.rows.map((r) => [r[f.idx.x], r[f.idx.y], r[f.idx.z]]));
-    const center = all.reduce((a, p) => a.map((v, i) => v + p[i] / all.length), [0, 0, 0]);
-    controls.target.set(...center);
-    camera.position.set(center[0] + 80, center[1] + 60, center[2] + 80);
-    show(0);
+    $("frame").value = frames.length - 1;  // open on the surviving defects; Play replays the cascade
+    // Fit the camera to the bounding box of every frame, so the whole cascade is in view.
+    const box = new THREE.Box3();
+    for (const f of frames) for (const r of f.rows) box.expandByPoint(new THREE.Vector3(r[f.idx.x], r[f.idx.y], r[f.idx.z]));
+    const center = box.getCenter(new THREE.Vector3());
+    const size = Math.max(...box.getSize(new THREE.Vector3()).toArray(), 10);
+    controls.target.copy(center);
+    camera.position.copy(center).add(new THREE.Vector3(1, 0.7, 1).normalize().multiplyScalar(size * 1.1));
+    show(frames.length - 1);
   } catch (e) {
     $("error").textContent = `Could not open the cascade: ${e.message}`;
   }

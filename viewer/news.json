@@ -1,0 +1,25 @@
+[
+  {
+    "title": "First full-size cascade passes every check",
+    "date": "2 November 2026",
+    "body": [
+      "Our first real 5 keV work unit ran on a single laptop core: 250,000 tungsten atoms, 10 ps of warm-up, then a 20 ps cascade. It took 1 hour 37 minutes and 314 MB of memory, and left 9 Frenkel pairs behind.",
+      "It also caught a flaw in our energy check, which we have fixed: thermostat bookkeeping, not physics, was causing the drift."
+    ]
+  },
+  {
+    "title": "The physics is pinned down",
+    "date": "2 November 2026",
+    "body": [
+      "Work units use the Juslin-Wirth tungsten potential, built exactly from the published paper, with electronic stopping from SRIM tables. Box sizes, timesteps and run lengths follow published tungsten cascade studies, so our results can be compared with theirs.",
+      "We start with 5 and 10 keV cascades at 300 K."
+    ]
+  },
+  {
+    "title": "Coming soon: invite-only beta",
+    "date": "2 November 2026",
+    "body": [
+      "Before opening to everyone, a small group of Linux volunteers will test the whole system: downloads, suspend and resume, validation and credit. Watch this page for sign-up details."
+    ]
+  }
+]

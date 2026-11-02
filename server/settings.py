@@ -23,7 +23,10 @@ def load(path: Path | None = None) -> dict:
     """Read the settings file (NAH_SETTINGS overrides the default path)."""
     path = path or Path(os.environ.get("NAH_SETTINGS", DEFAULT_PATH))
     with open(path, "rb") as handle:
-        return tomllib.load(handle)
+        settings = tomllib.load(handle)
+    if os.environ.get("NAH_SCIENCE_DIR"):  # local hosting: a user-writable science directory
+        settings["storage"]["science_dir"] = os.environ["NAH_SCIENCE_DIR"]
+    return settings
 
 
 def _has_todo(value: Any) -> bool:

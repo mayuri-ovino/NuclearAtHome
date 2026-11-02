@@ -3,29 +3,117 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Nuclear@Home Dashboard</title>
+  <title>Nuclear@Home</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<header class="top">
+  <div class="bar">
+    <a class="brand" href="#overview"><span class="mark" aria-hidden="true"></span><span>Nuclear<span class="at">@</span>Home</span></a>
+    <nav aria-label="Sections">
+      <a href="#overview">Overview</a>
+      <a href="#machines">Machines</a>
+      <a href="#workunits">Work Units</a>
+      <a href="#stats">Stats</a>
+      <a href="#campaigns">Campaigns</a>
+      <a href="#news">News</a>
+    </nav>
+  </div>
+</header>
 <main>
-  <h1>Nuclear@Home</h1>
-  <p class="lede">Volunteers simulate how fast neutrons damage tungsten, the armour of fusion reactor walls.
-    Each run fires one atom through the crystal and counts the defects it leaves behind.</p>
-  <section class="tiles" aria-label="Project summary">
-    <div class="tile">Active computers (7 days)<b id="hosts">–</b></div>
-    <div class="tile">Work units per day<b id="perday">–</b></div>
-  </section>
-  <h2>Surviving defects</h2>
-  <p class="lede">Frenkel pairs (a vacancy plus an interstitial atom) left after each cascade, with the standard
-    error and a 95% bootstrap interval. n is the number of validated cascades.</p>
-  <table>
-    <thead><tr><th>Material</th><th>Potential</th><th>PKA energy (eV)</th><th>Temperature (K)</th>
-      <th>n</th><th>Mean Frenkel pairs</th><th>± SE</th><th>95% interval</th></tr></thead>
-    <tbody id="bins"><tr><td colspan="8">Loading…</td></tr></tbody>
-  </table>
   <p id="error" class="err" role="alert"></p>
-  <p>Open a finished cascade in 3D: <a href="cascade.html">cascade viewer</a>.</p>
+
+  <section id="overview" class="page">
+    <h1>Simulating radiation damage in fusion reactor walls</h1>
+    <p class="lede">Volunteers lend spare computer time to simulate what happens when a fast neutron knocks a
+      tungsten atom out of place: a collision cascade lasting a few trillionths of a second. Each work unit
+      counts the defects the cascade leaves behind. Thousands of them tell us how wall materials wear out.</p>
+    <div class="tiles">
+      <div class="tile"><span>Active computers (7 days)</span><b id="o-hosts">–</b></div>
+      <div class="tile"><span>Work units per day</span><b id="o-perday">–</b></div>
+      <div class="tile"><span>Validated cascades</span><b id="o-total">–</b></div>
+      <div class="tile"><span>Points awarded</span><b id="o-points">–</b></div>
+    </div>
+    <h2>Surviving defects so far</h2>
+    <p class="lede">Frenkel pairs (an empty lattice site plus a displaced atom) left after each cascade.
+      SE is the standard error; the interval is a 95% bootstrap interval; n is the number of cascades.</p>
+    <div class="scroll"><table>
+      <thead><tr><th>Material</th><th>Potential</th><th>PKA energy</th><th>Temp.</th><th>n</th>
+        <th>Mean Frenkel pairs</th><th>± SE</th><th>95% interval</th></tr></thead>
+      <tbody id="o-bins"><tr><td colspan="8">Loading…</td></tr></tbody>
+    </table></div>
+  </section>
+
+  <section id="machines" class="page">
+    <h1>Machines</h1>
+    <p class="lede">Look up a computer by its BOINC host ID (BOINC Manager → Projects → Nuclear@Home →
+      Properties). Computers are shown only if their owner lets BOINC show them.</p>
+    <form id="m-form" class="lookup"><label>Host ID <input id="m-id" inputmode="numeric" pattern="[0-9]{1,18}" required></label>
+      <button>Look up</button></form>
+    <div id="m-out" hidden>
+      <div class="tiles">
+        <div class="tile"><span>Estimated PPD</span><b id="m-est">–</b></div>
+        <div class="tile"><span>Actual PPD (7-day)</span><b id="m-act">–</b></div>
+        <div class="tile"><span>Valid WUs (30 days)</span><b id="m-valid">–</b></div>
+        <div class="tile"><span>Invalid WUs (30 days)</span><b id="m-invalid">–</b></div>
+      </div>
+      <h2>Time per frame</h2>
+      <p class="lede">TPF is the time to finish 1% of a work unit on this computer.</p>
+      <div class="scroll"><table><thead><tr><th>Day</th><th>TPF</th></tr></thead><tbody id="m-tpf"></tbody></table></div>
+    </div>
+  </section>
+
+  <section id="workunits" class="page">
+    <h1>Work Units</h1>
+    <p class="lede">The latest validated cascades. Open any of them in 3D.</p>
+    <div class="scroll"><table>
+      <thead><tr><th>Work unit</th><th>PKA energy</th><th>Temp.</th><th>Frenkel pairs</th><th>Points</th><th>Day</th><th></th></tr></thead>
+      <tbody id="w-rows"><tr><td colspan="7">Loading…</td></tr></tbody>
+    </table></div>
+  </section>
+
+  <section id="stats" class="page">
+    <h1>Stats</h1>
+    <div class="cols">
+      <div class="card">
+        <h2>Volunteer</h2>
+        <form id="u-form" class="lookup"><label>User ID <input id="u-id" inputmode="numeric" pattern="[0-9]{1,18}" required></label>
+          <button>Look up</button></form>
+        <dl id="u-out" hidden>
+          <dt>Rank</dt><dd id="u-rank"></dd><dt>PPD (7-day)</dt><dd id="u-ppd"></dd>
+          <dt>Points on <span id="u-day"></span></dt><dd id="u-points"></dd>
+          <dt>Badges</dt><dd id="u-badges" class="badges"></dd>
+        </dl>
+        <p class="note">Shown only for volunteers who agreed to stats export in their BOINC account.</p>
+      </div>
+      <div class="card">
+        <h2>Team</h2>
+        <form id="t-form" class="lookup"><label>Team ID <input id="t-id" inputmode="numeric" pattern="[0-9]{1,18}" required></label>
+          <button>Look up</button></form>
+        <dl id="t-out" hidden>
+          <dt>Rank</dt><dd id="t-rank"></dd><dt>PPD (7-day)</dt><dd id="t-ppd"></dd>
+          <dt>Points on <span id="t-day"></span></dt><dd id="t-points"></dd>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <section id="campaigns" class="page">
+    <h1>Campaigns</h1>
+    <div class="card" id="c-card">
+      <h2 id="c-title">–</h2>
+      <p class="lede" id="c-desc"></p>
+      <div id="c-bins"></div>
+    </div>
+  </section>
+
+  <section id="news" class="page">
+    <h1>News</h1>
+    <div id="n-list"></div>
+  </section>
 </main>
-<script src="dashboard.js"></script>
+<footer class="foot">Nuclear@Home is a BOINC volunteer computing project. Code MIT/BSD, data CC-BY.
+  No cash or crypto rewards; points are just for fun.</footer>
+<script src="site.js"></script>
 </body>
 </html>

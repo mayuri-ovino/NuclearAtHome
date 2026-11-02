@@ -44,7 +44,11 @@ def assimilate(wu_name: str, paths: list[str]) -> None:
     settings = load()
     wu, params = load_wu(settings, wu_name)
     meta = canonical_result(wu_name)
-    record = record_for(settings, paths, meta["elapsed_s"], wu, params)
+    store_result(settings, wu_name, wu, record_for(settings, paths, meta["elapsed_s"], wu, params), meta, paths)
+
+
+def store_result(settings: dict, wu_name: str, wu: dict, record: dict, meta: dict, paths: list[str]) -> None:
+    """Copy the result files to science storage and insert its rows (shared with scripts/load_result.py)."""
     cascade = record["cascade"]
     outlier = is_outlier(settings, wu, cascade["n_vacancies"])
 

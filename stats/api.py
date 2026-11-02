@@ -13,6 +13,18 @@ from typing import Callable
 from urllib.parse import parse_qs
 
 Query = Callable[[str, tuple], list[tuple]]
+
+
+def _campaign() -> dict:
+    """Public campaign facts from config/settings.toml (no secrets live there)."""
+    from server.settings import load
+    c = load()["campaign"]
+    return {"id": c["id"], "material": c["material_family"], "potential_id": c["potential_id"],
+            "energies_ev": c["energies_ev"], "temperatures_k": c["temperatures_k"],
+            "target_per_bin": c["target_per_bin"]}
+
+
+CAMPAIGN = _campaign()
 WU_ID = r"[A-Z]{2}-[0-9]{4}-[0-9]{8}"
 
 
@@ -59,9 +71,20 @@ def member(table: str) -> Callable:
 def summary(query: Query, _ident, qs) -> dict:
     (active,), = query("SELECT count(DISTINCT host_id) FROM wu_results WHERE reported_at > now() - interval '7 days'", ())
     (per_day,), = query("SELECT count(*) / 7.0 FROM wu_results WHERE reported_at > now() - interval '7 days'", ())
+    (total_wus, total_points), = query("SELECT count(*), coalesce(sum(points_awarded), 0) FROM wu_results", ())
     bins = query("SELECT pka_energy_ev, temperature_k, n FROM science_aggregates ORDER BY 1, 2", ())
-    return {"active_hosts_7d": active, "wus_per_day": float(per_day),
+    return {"active_hosts_7d": active, "wus_per_day": float(per_day), "total_wus": total_wus,
+            "total_points": float(total_points), "campaign": CAMPAIGN,
             "campaign_progress": [{"pka_energy_ev": e, "temperature_k": t, "n": n} for e, t, n in bins]}
+
+
+def recent(query: Query, _ident, qs) -> dict:
+    """The latest validated cascades (no host or user: those follow the privacy rules)."""
+    rows = query("""SELECT r.wu_id, r.pka_energy_ev, r.temperature_k, c.n_vacancies, r.points_awarded,
+                           r.reported_at::date FROM wu_results r JOIN cascade_stats c USING (wu_id)
+                    ORDER BY r.reported_at DESC LIMIT 50""", ())
+    keys = ["wu_id", "pka_energy_ev", "temperature_k", "frenkel_pairs", "points", "day"]
+    return {"workunits": [dict(zip(keys, row)) for row in rows]}
 
 
 def cascades(query: Query, _ident, qs) -> dict:
@@ -99,6 +122,7 @@ ROUTES = [
     (re.compile(r"^/api/v1/teams/([0-9]{1,18})$"), member("team_daily")),
     (re.compile(r"^/api/v1/project/summary$()"), summary),
     (re.compile(r"^/api/v1/science/cascades$()"), cascades),
+    (re.compile(r"^/api/v1/workunits/recent$()"), recent),
     (re.compile(rf"^/api/v1/cascades/({WU_ID})/snapshots$"), snapshots),
 ]
 SNAPSHOT_FILE = re.compile(rf"^/api/v1/cascades/({WU_ID})/snapshots/0$")
