@@ -42,6 +42,12 @@ Tritium retained per m² of wall vs. time, with uncertainty band
 | A6 | Isotope effects between H and T | TODO-LIT |
 | A7 | Surface effects (recombination, desorption) | TODO-LIT |
 
+## Scope limits
+
+The chain is valid only in the low-dose, primary-damage regime, at fixed temperature, without
+transients, and cannot be validated against fusion-neutron experiments (none exist yet). See
+`docs/limitations.md`; estimates outside that scope are not published.
+
 ## Uncertainty propagation
 
 Report three separate contributions: statistical (sample size), model
