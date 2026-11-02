@@ -28,6 +28,7 @@ Nothing left. The SRIM stopping table, the exact Juslin–Wirth potential and th
 ## 5. After the alpha
 
 14. Trapping stage, retention model, two-temperature model, screensaver, speed bonus.
+16. Windows: CPU version 1.02 built (`bash client/build_lammps_windows.sh <dir>`, MinGW in a container, stock wrapper 26019) and registered on staging; small cascades, interrupt/resume and the crash-recovery path pass under Wine. Still to do: a full 5 keV run on a real Windows PC, and a Windows OpenCL GPU build.
 15. GPU: the OpenCL build works (core 0xa2, `bash client/build_lammps.sh <dir> gpu`). Still to do on staging: register the opencl_* app versions in BOINC, calibrate GPU work units, test on AMD and Intel GPUs. CUDA and HIP builds are not started.
 
 ## Done

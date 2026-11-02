@@ -77,10 +77,11 @@ Read the full list in the project's **limitations** page.
 
 ## 4. What do I need?
 
-- A **64-bit Linux computer on an Intel or AMD processor** (Linux x86_64). Other systems are not
-  supported yet. **TODO-VERIFY** that the Raspberry Pi mention on the join page is removed, because a
-  Raspberry Pi uses a different processor type.
-- BOINC installed. On Ubuntu or Debian: `sudo apt install boinc-client boinc-manager`.
+- A **64-bit Linux or Windows computer on an Intel or AMD processor** (x86_64). Other systems,
+  including Macs and the Raspberry Pi, are not supported yet. On Windows, only CPU tasks are
+  available for now; GPU tasks need Linux.
+- BOINC installed. On Windows, use the installer from https://boinc.berkeley.edu/download.php.
+  On Ubuntu or Debian: `sudo apt install boinc-client boinc-manager`.
 - **CPU tasks** use about one CPU core each. Peak memory was about 314 MB in one measured run on the
   developers' reference laptop. **TODO-DECIDE:** the memory figure to publish (rounded), once the
   calibration is done.

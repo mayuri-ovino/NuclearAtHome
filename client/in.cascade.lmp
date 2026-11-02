@@ -60,6 +60,9 @@ thermo          ${check_steps}
 run             0
 fix             nve all nve
 
+# Windows: a crash between the two steps of the checkpoint swap below leaves only the complete .tmp.
+if "$(is_file(checkpoint.state)) == 0 && $(is_file(checkpoint.state.tmp)) == 1" then &
+  "shell mv checkpoint.state.tmp checkpoint.state"
 if "$(is_file(checkpoint.state)) == 1" then "jump SELF resume"
 
 # ---------------------------------------------------------------- fresh start
@@ -170,6 +173,9 @@ variable tref equal ${tref}
 variable prev_file string ${ck_name}
 """ file checkpoint.state.tmp screen no
 shell           mv checkpoint.state.tmp checkpoint.state
+# Windows cannot rename onto an existing file (LAMMPS warns and leaves .tmp): remove the old pointer
+# first. The .tmp is complete by now, and the resume check above recovers it if a crash falls between.
+if "$(is_file(checkpoint.state.tmp)) == 1" then "shell rm checkpoint.state" "shell mv checkpoint.state.tmp checkpoint.state"
 shell           rm -f ${prev_file}
 variable        prev_file string ${ck_name}
 jump            SELF after_checkpoint

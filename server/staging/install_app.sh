@@ -21,6 +21,14 @@ if [ -f "$src/client/app_version/lmp_nah_stable_29Aug2024_opencl" ]; then
   cp "$src/client/app_version/version_opencl.xml" "$g/version.xml"
   cp "$src/client/job_opencl.xml" "$g/job_nah_cascade_opencl_2.xml"
 fi
+# Windows x86_64 CPU version, if it has been built: bash client/build_lammps_windows.sh <dir>
+w=apps/nuclear_cascade/1.02/windows_x86_64  # 1.02: first Windows version
+if [ -f "$src/client/app_version/lmp_nah_stable_29Aug2024_windows.exe" ]; then
+  mkdir -p "$w"
+  cp "$src/client/app_version/wrapper_26019_windows_x86_64.exe" "$src/client/app_version/lmp_nah_stable_29Aug2024_windows.exe" "$w/"
+  cp "$src/client/app_version/version_windows.xml" "$w/version.xml"
+  cp "$src/client/job.xml" "$w/job_nah_cascade_1.xml"
+fi
 cp "$src/server/boinc/nah_cascade_in" "$src/server/boinc/nah_cascade_out" templates/
 cp "$src/server/boinc/bin/"nah_* bin/
 python3 "$src/server/staging/add_app.py" .

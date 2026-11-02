@@ -9,7 +9,7 @@ Decided by the human in Phase 1:
 | Topic | Decision |
 |---|---|
 | Server | BOINC server on one cheap cloud VM (official BOINC server Docker image) |
-| Clients | Linux x86_64 only for the alpha |
+| Clients | Linux x86_64 (CPU and NVIDIA OpenCL GPU) and Windows x86_64 (CPU) |
 | Wrapper | BOINC's stock `wrapper` (job.xml) runs LAMMPS only. No project code runs on volunteer machines; the server parses LAMMPS's raw output. (Rust was considered and dropped.) |
 | Audience | Open to the public (so privacy policy, GDPR consent, code signing, and server hardening are launch blockers) |
 | Test machines | No dedicated test fleet. Testing uses mock volunteers, the developer's own machine as a BOINC client, then the public alpha. |

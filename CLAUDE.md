@@ -33,7 +33,7 @@ Every agent working in this repository (main session and subagents) follows thes
 ## Code standards
 - Python 3.11+ (server, validator, stats, analysis), no project code on
   volunteer machines (BOINC's stock `wrapper` runs LAMMPS; the server parses its raw
-  output), Linux x86_64 clients only,
+  output), Linux and Windows x86_64 clients only (Windows: CPU app; human decision 2026-11-02),
   JavaScript + Three.js (viewer). SQL: MariaDB for BOINC, PostgreSQL for science data.
 - Every code change ships with tests in `tests/` mirroring the source folder.
   Run `scripts/run-tests.sh` before reporting done.

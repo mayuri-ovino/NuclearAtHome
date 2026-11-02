@@ -1,0 +1,18 @@
+<!-- App version layout for Windows x86_64 (BOINC platform windows_x86_64), CPU core 0xa1.
+     Files: BOINC's stock wrapper 26019 (official release, github.com/BOINC/boinc/releases/tag/wrapper/26019,
+     sha256 ec9ba4a1e37e0767271f2c1a90d1b251ffc3c9f1936ab1cc53a201e03567106e), static LAMMPS from
+     client/build_lammps_windows.sh, and the same job.xml as Linux. Each file is signed on the offline machine. -->
+<version>
+  <file>
+    <physical_name>wrapper_26019_windows_x86_64.exe</physical_name>
+    <main_program/>
+  </file>
+  <file>
+    <physical_name>lmp_nah_stable_29Aug2024_windows.exe</physical_name>
+    <logical_name>lmp</logical_name>
+  </file>
+  <file>
+    <physical_name>job_nah_cascade_1.xml</physical_name>
+    <logical_name>job.xml</logical_name>
+  </file>
+</version>
