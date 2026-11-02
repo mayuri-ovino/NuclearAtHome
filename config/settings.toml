@@ -11,9 +11,9 @@ number = 1                                # 4-digit campaign number inside wu_id
 wu_prefix = "WA"                          # two capital letters (workunit_schema.json wu_id pattern)
 material_family = "W"
 composition = { W = 1.0 }
-potential_id = "W_EAM_A"                  # Ackland-Thetford + ZBL at Juslin-Wirth distances (decision log)
+potential_id = "W_EAM_A"                  # Juslin-Wirth 2013 modified Ackland-Thetford (exact, from the paper)
 pka_element = "W"
-energies_ev = [5000.0, 10000.0]           # Warrier & Bhardwaj benchmark energies (UNVERIFIED)
+energies_ev = [5000.0, 10000.0]           # Warrier & Bhardwaj Table 1 benchmark energies
 temperatures_k = [300.0]                  # benchmark temperature
 target_per_bin = 100                      # Warrier & Bhardwaj: 100 directions per energy
 canary_fraction = 0.02                    # decision log: 2% of WUs
@@ -22,7 +22,7 @@ max_in_flight = "TODO-DECIDE"             # WUs created but not yet assimilated
 
 [potentials.W_EAM_A]
 lattice = "bcc"
-lattice_constant_angstrom = 3.1674         # measured: NPT 300 K, 0 bar with W_EAM_A.dat (Setyawan lists 3.167 for JW)
+lattice_constant_angstrom = 3.1674         # measured: NPT 300 K, 0 bar; Setyawan 2015 Table 1: 3.167 (JW, 300 K)
 # LAMMPS commands (pair_style, pair_coeff incl. the ZBL join) that read potential.dat.
 # Written only once the potential and its join are approved (D8).
 mod_file = "client/potentials/W_EAM_A.mod"
@@ -30,7 +30,7 @@ data_file = "client/potentials/W_EAM_A.dat"
 cost_factor = 1.0                         # EAM = 1.0 by definition (credit_spec.md section 1)
 
 [electronic.es_default]
-cutoff_ev = 10.0                          # Byggmaestar 2025 (UNVERIFIED; sources range 1-100 eV)
+cutoff_ev = 30.0                          # E_D^min of W, Hemani et al. arXiv:2005.11940 p.5 (the ES method Warrier & Bhardwaj cite)
 stopping_file = "client/potentials/stopping_W.dat"
 
 [simulation]
@@ -39,7 +39,7 @@ fixed_cells = 1                           # outermost cells held fixed (Warrier 
 thermostat_cells = 2                      # next 2 cells thermostatted at T (Warrier & Bhardwaj Sec. 2)
 thermostat_damp_ps = 0.1                  # decision log: convention, not in the benchmark papers
 dt_max_ps = 0.001                         # Warrier & Bhardwaj: 1 fs timestep
-dx_max_angstrom = 0.005                   # Setyawan 2015 (UNVERIFIED)
+dx_max_angstrom = 0.005                   # Setyawan 2015 Sec. 2
 equilibration_ps = 10.0                   # Warrier & Bhardwaj Sec. 2 (they use NPT; we use the measured 300 K a0)
 check_interval_steps = 100                # defect count, energy log and progress every N steps (decision log)
 checkpoint_every_checks = 20
@@ -51,13 +51,14 @@ max_time_ps = 20.0                        # Warrier & Bhardwaj Sec. 2 (read 2026
 channeling_exclusion_deg = 0.0            # none: benchmark uses uniformly random directions
 
 [analysis]
-vacancy_cluster_cutoff_angstrom = 5.2525  # 4NN = a0*sqrt(11)/2, Setyawan 2015 (UNVERIFIED)
-interstitial_cluster_cutoff_angstrom = 4.4794  # 3NN = a0*sqrt(2), Setyawan 2015 (UNVERIFIED)
+vacancy_cluster_cutoff_angstrom = 5.2525  # 4NN = a0*sqrt(11)/2, Setyawan 2015 Sec. 3.2
+interstitial_cluster_cutoff_angstrom = 4.4794  # 3NN = a0*sqrt(2), Setyawan 2015 Sec. 3.2
 bootstrap_samples = 2000
 
 [validator]
 min_md_steps = 20000                      # V3: 20 ps at dt <= 1 fs needs at least this many
-energy_tolerance = 0.002                  # V4, fraction of PKA energy: 10x the measured drift (~2e-4)
+energy_tolerance = 0.005                  # V4, fraction of PKA energy: measured with JW 4.2e-4 without stopping, 8.8e-4 with
+                                          # (JW's rounded coefficients leave a 0.08 eV step at r1; the stopping tally adds the rest)
 boundary_ke_flag_ev = 10.0                # flag (not reject) a run whose recoil above this reaches the boundary layers;
                                           # 10 eV = stopping cutoff, ~400 kT at 300 K
 population_test = "none"                  # replicas equivalent when both pass V1-V8 (decision log)

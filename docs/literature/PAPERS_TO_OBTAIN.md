@@ -1,6 +1,8 @@
 # Papers and data to obtain
 
-Status: for the human. Each item says which value in `config/settings.toml` or
+Status: items 1–6 obtained by the human and checked on the page 2026-11-02 (results in physics_settings.md); item 6's Fig. 2 still needs digitizing. Kept as the source list.
+
+Originally for the human. Each item says which value in `config/settings.toml` or
 `docs/interfaces/physics_settings.md` it verifies. "Free" = open access (arXiv or OA).
 
 ## Needed to verify values in use now

@@ -4,13 +4,11 @@ Updated 2026-11-01. "You" = the human; "agent" = Claude Code.
 
 ## 1. Blocks every real cascade run
 
-1. **You: SRIM stopping table for W in W**, saved as `client/potentials/stopping_W.dat` (`docs/literature/PAPERS_TO_OBTAIN.md` #5). Until it exists, the work generator refuses to run.
-2. **You: email B. D. Wirth for the Juslin–Wirth W–W potential file** (#1). W_EAM_A is "AT1987 + ZBL core", not JW: its TDE along ⟨100⟩ is ≈ 69 eV against 54.3 for JW, so benchmark comparisons are qualitative until the real file arrives.
-3. **You: check the remaining UNVERIFIED values** against papers #2–#4: max displacement 0.005 Å, cluster cutoffs, electronic-stopping cutoff 10 eV.
+Nothing left. The SRIM stopping table, the exact Juslin–Wirth potential and the paper checks were all done 2026-11-02. Remaining physics caveat: Warrier & Bhardwaj use Lindhard–Scharff stopping, and we use SRIM with the same 30 eV cutoff.
 
 ## 2. Blocks deploying anywhere
 
-4. **Agent, later:** measure TDE the way Warrier does, and SIA dumbbell formation energies, for W_EAM_A (small boxes). Done this round: both re-reviews applied, and BOINC script macros and exit codes checked against the BOINC source.
+4. **Agent, later:** the full JW Table 3/4 reproduction (⟨110⟩ dumbbell, octahedral site, averaged TDE). The ⟨111⟩ dumbbell already matches: 9.52 vs 9.50 eV. Done this round: both re-reviews applied, and BOINC script macros and exit codes checked against the BOINC source.
 5. **Agent + you: staging BOINC server.** Install the wrappers from `server/boinc/bin/` and run the SQL against real PostgreSQL and MariaDB. The macros and exit 3 = retry were checked in the BOINC source; still check adaptive replication and the CPU-limit behaviour (SIGXCPU counts as invalid). Size the server for up to 4 GB per concurrent validator.
 
 ## 3. Needed for good science (not blocking the alpha)
