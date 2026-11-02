@@ -56,16 +56,16 @@ def shared_inputs(settings: dict, project_dir: Path, potential_id: str) -> list[
 def create_work(settings: dict, project_dir: Path, wu: dict, params_name: str,
                 shared: list[str], priority: int = 0) -> None:
     """Register one WU with BOINC. Credit is fixed server-side (validator --credit_from_wu)."""
-    b = "boinc"
+    b, tier = "boinc", wu["size_tier"]
     cmd = ["bin/create_work",
            "--appname", require(settings, f"{b}.app_name"),
            "--wu_name", wu["wu_id"],
            "--wu_template", require(settings, f"{b}.wu_template"),
            "--result_template", require(settings, f"{b}.result_template"),
-           "--rsc_fpops_est", str(require(settings, f"{b}.fpops_est")),
-           "--rsc_fpops_bound", str(require(settings, f"{b}.fpops_bound")),
-           "--rsc_memory_bound", str(require(settings, f"{b}.memory_bytes")),
-           "--delay_bound", str(require(settings, f"{b}.delay_bound_s")),
+           "--rsc_fpops_est", str(require(settings, f"{b}.{tier}.fpops_est")),
+           "--rsc_fpops_bound", str(require(settings, f"{b}.{tier}.fpops_bound")),
+           "--rsc_memory_bound", str(require(settings, f"{b}.{tier}.memory_bytes")),
+           "--delay_bound", str(require(settings, f"{b}.{tier}.delay_bound_s")),
            "--min_quorum", str(require(settings, f"{b}.min_quorum")),
            "--target_nresults", str(require(settings, f"{b}.target_nresults")),
            "--priority", str(priority),

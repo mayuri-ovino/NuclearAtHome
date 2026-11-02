@@ -31,6 +31,14 @@ def unit_cells_for(settings: dict, energy_ev: float) -> int:
     raise ValueError(f"no box rule covers a {energy_ev} eV PKA")
 
 
+def size_tier_for(settings: dict, n_atoms: int) -> str:
+    """The first tier whose atom limit covers this box."""
+    for max_atoms, tier in require(settings, "campaign.size_tiers"):
+        if n_atoms <= max_atoms:
+            return tier
+    raise ValueError(f"no size tier covers {n_atoms} atoms")
+
+
 def planned_md_steps(settings: dict) -> int:
     """Steps used for points: equilibration plus the hard time limit at the largest timestep.
 
@@ -60,7 +68,7 @@ def make_cascade_wu(settings: dict, *, serial: int, energy_ev: float, temperatur
         "wu_type": "cascade",
         "app_version_min": "1",
         "random_seed": seed,
-        "size_tier": require(settings, "campaign.size_tier"),
+        "size_tier": size_tier_for(settings, n_atoms),
         "points": points,
         "checkpoint_interval_steps": require(settings, "simulation.check_interval_steps")
                                      * require(settings, "simulation.checkpoint_every_checks"),

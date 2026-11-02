@@ -53,7 +53,7 @@ Updated 2026-11-01. "You" = the human; "agent" = Claude Code.
 12. **You: calibrate on your laptop.**
     - `ref_work`: run one 5 keV reference WU.
     - BOINC estimates: `fpops_est`, `fpops_bound`, `memory_bytes`, `delay_bound_s`.
-    - Note: 10 keV is 843,750 atoms, above the ~250k-atom Small tier. Check RAM and runtime.
+    - 10 keV (843,750 atoms) is now a Large-tier WU, with its own BOINC estimates. Measure both tiers.
 13. **Physics check: equilibration ensemble.** The benchmarks equilibrate at constant pressure (NPT); the template uses a fixed lattice constant at T. That's fine for 300 K only. Any new temperature needs its own a0.
 14. **Agent: Phase 2.** Finalize the interfaces from these decisions; you freeze them (2-step process in the README).
 

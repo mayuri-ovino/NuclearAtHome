@@ -19,6 +19,12 @@ class TestWorkunit(unittest.TestCase):
         self.assertEqual(planned_md_steps(s), 1000 + 10000)
         self.assertAlmostEqual(wu()["points"], 1000.0 * 128 * 11000 * 1.0 / 1.0e9)
 
+    def test_size_tier_from_atom_count(self):
+        s = settings()
+        self.assertEqual(wu()["size_tier"], "small")  # 4^3 cells, 128 atoms
+        big = make_cascade_wu(s, serial=2, energy_ev=2000.0, temperature_k=300.0, direction=(0, 0, 1), seed=1)
+        self.assertEqual(big["size_tier"], "large")  # 6^3 cells, 432 atoms
+
     def test_box_rule(self):
         s = settings()
         self.assertEqual(unit_cells_for(s, 1500.0), 4)

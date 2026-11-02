@@ -18,7 +18,7 @@ energies_ev = [1000.0, 2000.0]
 temperatures_k = [300.0]
 target_per_bin = 3
 canary_fraction = 0.0
-size_tier = "small"
+size_tiers = [[200, "small"], [5000000, "large"]]
 max_in_flight = 10
 
 [potentials.W_EAM_A]
@@ -78,10 +78,8 @@ app_name = "nuclear_cascade"
 project_dir = "/home/boincadm/projects/nuclear"
 wu_template = "templates/nah_cascade_in"
 result_template = "templates/nah_cascade_out"
-fpops_est = 1e12
-fpops_bound = 1e13
-memory_bytes = 1e9
-delay_bound_s = 86400
+small = { fpops_est = 1e12, fpops_bound = 1e13, memory_bytes = 1e9, delay_bound_s = 86400 }
+large = { fpops_est = 1e13, fpops_bound = 1e14, memory_bytes = 4e9, delay_bound_s = 259200 }
 min_quorum = 2                            # validator_spec.md: new hosts always replicated
 target_nresults = 2
 
