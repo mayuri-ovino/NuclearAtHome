@@ -31,8 +31,9 @@ Every agent working in this repository (main session and subagents) follows thes
 - Never weaken a validation check to make a test pass.
 
 ## Code standards
-- Python 3.11+ (server, validator, stats, analysis), Rust stable (client-side
-  helper run by BOINC's stock `wrapper`; no custom C++ wrapper), Linux x86_64 clients only,
+- Python 3.11+ (server, validator, stats, analysis), no project code on
+  volunteer machines (BOINC's stock `wrapper` runs LAMMPS; the server parses its raw
+  output), Linux x86_64 clients only,
   JavaScript + Three.js (viewer). SQL: MariaDB for BOINC, PostgreSQL for science data.
 - Every code change ships with tests in `tests/` mirroring the source folder.
   Run `scripts/run-tests.sh` before reporting done.
@@ -57,7 +58,7 @@ Every agent working in this repository (main session and subagents) follows thes
 
 ## Folder map
 - `server/` work generator, assimilator, BOINC server config
-- `client/` stock-wrapper job config, LAMMPS templates, Rust helper, graphics app
+- `client/` stock-wrapper job config, LAMMPS input template, LAMMPS build recipe
 - `validator/` result checks and host trust scoring
 - `stats/` credit, PPD, badges, stats aggregation, XML export, API
 - `viewer/` Three.js web viewer and dashboard front end

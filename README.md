@@ -60,7 +60,7 @@ nuclear-at-home/
 | Subagent | Model | Can edit? | Job |
 |---|---|---|---|
 | `wu-template-writer` | sonnet | yes (worktree) | LAMMPS templates, sample WUs, samplers |
-| `client-helper` | sonnet | yes (worktree) | Progress parsing, TPF, checkpoints, checksums |
+| `client-helper` | sonnet | yes (worktree) | LAMMPS input logic, job.xml, LAMMPS build, output parsing |
 | `validator-check-writer` | sonnet | yes (worktree) | Individual validator checks |
 | `stats-builder` | sonnet | yes (worktree) | Stats SQL, credit/PPD/badges, XML export, API |
 | `viewer-builder` | sonnet | yes (worktree) | Three.js viewer, dashboard UI |

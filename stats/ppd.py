@@ -1,7 +1,7 @@
 """Reference implementation of Nuclear@Home credit and PPD math.
 
 This file is the reference for docs/interfaces/credit_spec.md. Any other
-implementation (SQL, Rust, JavaScript) must produce identical numbers.
+implementation (SQL, JavaScript) must produce identical numbers.
 
 Calibration constants (ref_points, ref_work, cost factors, bonus k and cap) are
 passed in explicitly. Their real values are TODO-DECIDE / TODO-CALIBRATE in the spec.

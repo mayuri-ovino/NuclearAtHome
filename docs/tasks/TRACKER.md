@@ -13,7 +13,7 @@ validation, credit, or security is also flagged for human approval.
 | T-005 | Rewrite `validator_spec.md` for script_validator + BOINC trust (D3); freeze | 2 | main + human | todo | T-003, D3 | physics-reviewer | no |
 | T-006 | Update `credit_spec.md` for `--credit_from_wu`, no alpha bonus (D2); freeze | 2 | main + human | todo | D2 | physics-reviewer | no |
 | T-007 | `stats_spec.md`: PostgreSQL DDL + API contract; freeze | 2 | main | todo | T-003 | security-reviewer | no |
-| T-008 | New `client_contract.md`: job.xml, slot file names, `nah-helper` CLI; freeze | 2 | main | todo | T-003 | security-reviewer | no |
+| T-008 | New `client_contract.md`: job.xml, LAMMPS output file names and formats; freeze | 2 | main | todo | T-003 | security-reviewer | no |
 | T-009 | New `server_deploy.md`: VM layout, ports, backups, signing procedure; freeze | 2 | main | todo | — | security-reviewer | no |
 | T-010 | `retention_chain.md`: mark post-alpha, freeze structure | 2 | main + human | todo | — | physics-reviewer | no |
 | T-011 | Test suites from frozen interfaces (schema fixtures, validator vectors, credit cases) | 2 | main | todo | T-002..T-008 | main | no |
@@ -26,11 +26,9 @@ validation, credit, or security is also flagged for human approval.
 | T-026 | Trapping input template | 3 | wu-template-writer | todo | post-alpha | physics-reviewer | no |
 | T-027 | Stage B spawning in work generator | 3 | wu-template-writer | todo | post-alpha, T-024 | physics-reviewer | no |
 | T-030 | Static LAMMPS Linux x86_64 build recipe (pinned version, published source) | 4 | client-helper | todo | T-004 | security-reviewer | no |
-| T-031 | `nah-helper` Rust crate skeleton; `cargo test` wired into `run-tests.sh` | 4 | client-helper | todo | T-008 | main | no |
-| T-001 | TPF timer: rewrite card for Rust `nah-helper monitor` (suspend-gap rule, D11) | 4 | client-helper | todo | T-031 | physics-reviewer | no |
-| T-032 | Defect clustering from WS output in `nah-helper package` | 4 | client-helper | todo | T-031, T-004 | physics-reviewer | no |
-| T-033 | Result packaging: `result.json`, sha256, compression | 4 | client-helper | todo | T-031, T-003 | security-reviewer | no |
-| T-034 | job.xml + app version layout (unsigned dev build) | 4 | main | todo | T-020, T-030..T-033 | security-reviewer | no |
+| T-001 | TPF timer (superseded: TPF from BOINC elapsed_time, D11) | 4 | — | done | — | main | no |
+| T-032 | Server-side LAMMPS output parser + WS defect clustering | 4 | client-helper | todo | T-004 | physics-reviewer | no |
+| T-034 | job.xml + app version layout (unsigned dev build) | 4 | main | todo | T-020, T-030 | security-reviewer | no |
 | T-035 | Kill/suspend/restart integration test on a local BOINC client | 4 | test-writer | todo | T-034 | main | no |
 | T-036 | Python reference defect/cluster analysis for server re-checks | 4 | analysis-builder | todo | T-004 | physics-reviewer | no |
 | T-040 | Checks V1 schema, V2 integrity, V8 atom count | 5 | validator-check-writer | todo | T-005, T-011 | security-reviewer | no |
@@ -42,11 +40,11 @@ validation, credit, or security is also flagged for human approval.
 | T-046 | Trust: adaptive replication config, canary-failure reset, outlier hold/reissue | 5 | main | todo | T-045 | security-reviewer | no |
 | T-047 | Mock results: good, broken, and cheating (forged in-range) | 5 | test-writer | todo | T-011 | physics-reviewer | no |
 | T-050 | Credit calibration on reference machine (`ref_work`, cost factors) | 6 | main + human | todo | T-025 | physics-reviewer | no |
-| T-051 | Hourly estimated-PPD job from TPF samples | 6 | stats-builder | todo | T-007 | physics-reviewer | no |
+| T-051 | Hourly estimated-PPD job from TPF (BOINC elapsed_time) | 6 | stats-builder | todo | T-007 | physics-reviewer | no |
 | T-052 | Badges (thresholds from `credit_spec.md`) | 6 | stats-builder | todo | T-006, T-007 | main | no |
 | T-053 | `db_dump` XML export config + public credit transparency log | 6 | stats-builder | todo | T-007 | security-reviewer | no |
 | T-060 | PostgreSQL DDL + migrations | 7 | stats-builder | todo | T-007 | security-reviewer | no |
-| T-061 | Assimilator: ingest to PostgreSQL + file storage | 7 | stats-builder | todo | T-060, T-033 | security-reviewer | no |
+| T-061 | Assimilator: ingest to PostgreSQL + file storage | 7 | stats-builder | todo | T-060, T-032 | security-reviewer | no |
 | T-062 | Daily host/user/team aggregation + ranks | 7 | stats-builder | todo | T-060 | main | no |
 | T-063 | Science aggregates with SE + bootstrap CI | 7 | analysis-builder | todo | T-060 | physics-reviewer | no |
 | T-064 | Read-only JSON API | 7 | stats-builder | todo | T-060 | security-reviewer | no |

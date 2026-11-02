@@ -1,8 +1,8 @@
 {
   "_status": "DRAFT",
-  "_note": "What the client returns. Main agent finalizes in Phase 2, then sets _status to FROZEN.",
+  "_note": "The record the server builds from a result's raw LAMMPS files (analysis/lammps_output.py); clients run no project code. Main agent finalizes in Phase 2, then sets _status to FROZEN.",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "nuclear-at-home/result.schema.json",
+  "$id": "urn:nuclear-at-home:result.schema.json",
   "title": "Nuclear@Home result",
   "type": "object",
   "required": ["schema_version", "wu_id", "wu_type", "app_version", "run", "integrity"],
@@ -40,16 +40,17 @@
 
     "run": {
       "type": "object",
-      "required": ["md_steps_completed", "simulated_time_ps", "n_atoms", "checkpoints_written", "restarts", "tpf_samples_s"],
+      "required": ["md_steps_completed", "simulated_time_ps", "n_atoms", "checkpoints_written", "restarts", "tpf_samples_s", "stop_reason"],
       "properties": {
         "md_steps_completed": { "type": "integer", "minimum": 0 },
         "simulated_time_ps": { "type": "number", "minimum": 0 },
         "n_atoms": { "type": "integer", "minimum": 1 },
         "checkpoints_written": { "type": "integer", "minimum": 0 },
         "restarts": { "type": "integer", "minimum": 0 },
+        "stop_reason": { "type": "string", "enum": ["stabilized", "hard_limit"] },
         "tpf_samples_s": {
           "type": "array", "items": { "type": "number", "exclusiveMinimum": 0 },
-          "description": "Wall-clock seconds per 1% of progress. Informational only; never used for points."
+          "description": "Wall-clock seconds per 1% of progress: BOINC elapsed_time / 100 (suspensions excluded). Informational only; never used for points."
         }
       }
     },
@@ -118,11 +119,10 @@
 
     "integrity": {
       "type": "object",
-      "required": ["final_rng_state_hash", "output_sha256", "input_sha256"],
+      "required": ["output_sha256", "input_sha256"],
       "properties": {
-        "final_rng_state_hash": { "type": "string" },
         "output_sha256": { "type": "object", "minProperties": 1, "additionalProperties": { "type": "string" }, "description": "filename -> sha256" },
-        "input_sha256": { "type": "string" }
+        "input_sha256": { "type": "string", "description": "sha256 of the params echoed in log.lammps, canonicalized" }
       }
     }
   }

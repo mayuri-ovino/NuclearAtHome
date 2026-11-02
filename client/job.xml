@@ -1,0 +1,10 @@
+<!-- BOINC stock wrapper job description. The wrapper handles suspend/resume,
+     reports progress from progress.txt and checkpoints from checkpoint.state. -->
+<job_desc>
+  <task>
+    <application>lmp</application>
+    <command_line>-in in.cascade.lmp -log none -screen none</command_line>
+    <checkpoint_filename>checkpoint.state</checkpoint_filename>
+    <fraction_done_filename>progress.txt</fraction_done_filename>
+  </task>
+</job_desc>

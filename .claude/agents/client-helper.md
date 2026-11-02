@@ -21,9 +21,9 @@ Rules:
 - Never read or send any data about the volunteer's machine beyond what BOINC
   already reports.
 - Keep CPU and memory overhead tiny; never poll faster than the task card allows.
-- Rust (stable, std plus crates the card lists) for client code; BOINC's stock `wrapper`
-  runs it, so never call the BOINC API directly. Python only where the card says.
-  Rust unit tests live in the crate; other tests in `tests/client/`.
+- No project code runs on volunteer machines: BOINC's stock `wrapper` runs LAMMPS.
+  Your work is LAMMPS input logic, job.xml, the LAMMPS build recipe, and server-side
+  Python that parses LAMMPS output. Tests in `tests/client/` or `tests/analysis/`.
 - Run `bash scripts/run-tests.sh` before reporting.
 
 Finish with a report: files changed, tests run and results, assumptions, open questions.

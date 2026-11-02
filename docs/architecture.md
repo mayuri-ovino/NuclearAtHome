@@ -10,7 +10,7 @@ Decided by the human in Phase 1:
 |---|---|
 | Server | BOINC server on one cheap cloud VM (official BOINC server Docker image) |
 | Clients | Linux x86_64 only for the alpha |
-| Wrapper | BOINC's stock `wrapper` (job.xml); a small Rust helper does the project-specific client work. No custom C++ wrapper. |
+| Wrapper | BOINC's stock `wrapper` (job.xml) runs LAMMPS only. No project code runs on volunteer machines; the server parses LAMMPS's raw output. (Rust was considered and dropped.) |
 | Audience | Open to the public (so privacy policy, GDPR consent, code signing, and server hardening are launch blockers) |
 | Test machines | No dedicated test fleet. Testing uses mock volunteers, the developer's own machine as a BOINC client, then the public alpha. |
 | Developer hardware | 8-core Intel i7, ~32 GB RAM, NVIDIA GPU. Used as the reference machine for credit calibration and for local benchmark runs. |
@@ -39,10 +39,8 @@ flowchart LR
     BC[BOINC client]
     WR[stock wrapper]
     LMP[LAMMPS static build]
-    RH[Rust helper nah-helper<br/>TPF daemon + result packager]
     GFX[graphics app<br/>post-alpha]
     BC --> WR --> LMP
-    WR --> RH
     LMP -. snapshots .-> GFX
   end
 
@@ -81,15 +79,15 @@ flowchart LR
 | BOINC server (scheduler, feeder, transitioner, upload/download, web) | server | Stock BOINC: hands out work, takes back results, user/team accounts, forums | Phase 9 deploy |
 | MariaDB | server | Stock BOINC database: hosts, users, WUs, results, credit | stock |
 | Work generator | server | Picks parameters (fixed energy grid for now, later the recoil spectrum), favoring under-sampled bins. Sets base points from `stats/ppd.py`, then calls `create_work`. Also creates canaries and, post-alpha, trapping WUs. | 3 |
-| Client app | volunteer | Stock `wrapper` runs LAMMPS with a Nuclear@Home input template, then the Rust helper. Ships as one signed app version per Linux x86_64 build. | 3–4 |
+| Client app | volunteer | Stock `wrapper` runs LAMMPS with the Nuclear@Home input template (`client/in.cascade.lmp`). LAMMPS writes the progress file, checkpoints, energy log, defect history, defect list, snapshots and final config itself. Ships as one signed app version per Linux x86_64 build. | 3–4 |
 | LAMMPS static build | volunteer | Minimal package set (MANYBODY, EXTRA-FIX for electronic stopping and the two-temperature model, VORONOI for Wigner–Seitz occupation, plus whatever the chosen potentials need, TODO-DECIDE) linked statically, so it runs on any recent Linux. GPL-2: we publish its source and build recipe. | 4 |
-| Rust helper `nah-helper` | volunteer | Two modes. `monitor` is a wrapper `<daemon/>`: it measures TPF from the progress file and skips suspended time. `package` runs after LAMMPS: it clusters the Wigner–Seitz defects, assembles `result.json` per `result_schema.json`, computes sha256 checksums, and compresses outputs. | 4 |
 | Graphics app | volunteer | Renders the volunteer's own run from periodic snapshot files. Post-alpha (decision D5). | post-alpha |
 | Validator | server | BOINC `script_validator` calls Python checks V1–V10 (pure functions). Replicas are compared by population statistics, not to each other. Canary comparison, outlier hold, trust handling. | 5 |
 | Assimilator | server | Takes each canonical valid result: moves files to science storage, inserts rows into PostgreSQL, queues trapping WUs (post-alpha). | 7 |
 | PostgreSQL | server | Science tables and extended stats per `stats_spec.md`, including the server-only `canaries` table | 7 |
 | Result file storage | server | Defect files, snapshots, final configs on the VM disk, with nightly off-site backup (decision D6) | 7 |
-| Stats jobs | server | Cron jobs: hourly estimated PPD from TPF samples; daily host/user/team tables, ranks, badges, science aggregates with error bars. BOINC `db_dump` does the XML export. | 6–7 |
+| Output parser | server | `analysis/lammps_output.py` turns the raw LAMMPS files into the record described by `result_schema.json`; Wigner–Seitz clustering on the server (`analysis/defects.py`). Checksums: BOINC's own per-file MD5 for uploads. | 4 |
+| Stats jobs | server | Cron jobs: hourly estimated PPD from TPF (BOINC `elapsed_time` / 100); daily host/user/team tables, ranks, badges, science aggregates with error bars. BOINC `db_dump` does the XML export. | 6–7 |
 | API | server | Read-only, versioned JSON (`/api/v1/...`). Never exposes IPs, emails, or canary status. | 7 |
 | Dashboard + web viewer | browser | Static JavaScript pages: dashboard charts, plus a Three.js viewer for finished cascades from snapshot files | 7–8 |
 | Retention model | server | Rate theory or kinetic Monte Carlo per `retention_chain.md`, versioned runs, uncertainty band | post-alpha |
@@ -119,9 +117,10 @@ flowchart LR
    - Every N steps: write the progress fraction (read by the wrapper), the energy log, the defect count (from `compute voronoi/atom` occupation), and sparse snapshots.
    - Write a restart file every checkpoint interval; the wrapper's checkpoint signal points at it.
    - Stop when the Frenkel-pair count is stable, or at the hard time limit. All of these settings come from `physics_settings.md`.
-6. `[V]` Meanwhile, `nah-helper monitor` records TPF samples.
+6. `[V]` BOINC counts elapsed time excluding suspensions; it is reported with the result and gives TPF = elapsed / 100.
 7. `[V]` On suspend, the wrapper pauses LAMMPS. On restart, the template detects the restart file and resumes.
-8. `[V]` `nah-helper package` writes `result.json`, plus `defects`, `final_config`, and `snapshots` (compressed), and sha256 checksums for each. Target total < 5 MB compressed.
+8. `[V]` BOINC gzips the outputs (`<gzip_when_done/>`) and records their MD5s. Target total < 5 MB compressed.
+8b. `[S]` The validator parses the raw files into the `result_schema.json` record (`analysis/lammps_output.py`).
 9. `[V]` The BOINC client uploads the outputs.
 10. `[S]` The validator runs V1–V8. Then, depending on the WU:
     - replica: population test across the 2 results
@@ -140,7 +139,7 @@ flowchart LR
    - Size concern: see risk R6 and decision D9.
 3. `[V]` LAMMPS inserts H or T (tritium mass for dynamics), anneals for the configured time, then classifies atoms as trapped, free, or desorbed.
 4. `[V]` LAMMPS relaxes every trapped site to get binding energies. A configured subset of sites also gets an NEB calculation.
-5. `[V]` `nah-helper package` builds the trapping result.
+5. `[S]` The server parses the trapping outputs into the result record.
 6. `[S]` The validator runs V1–V2, V4, V8–V10, plus replication rules. The assimilator inserts `trapping_stats` and `trap_sites` rows.
 
 ### 2c. Trapping results to the retention estimate (post-alpha, server only)
@@ -177,7 +176,6 @@ Everything statistical and every model beyond MD timescales runs on the server.
 
 Also tracked (not top 10):
 - LAMMPS GPL-2 compliance: publish the source plus the build recipe.
-- Rust learning curve: the helper stays small, and its interface is frozen first.
 - Privacy and GDPR: BOINC's built-in consent tools plus a written privacy policy.
 
 ## 4. Decisions for the human
@@ -194,7 +192,7 @@ Also tracked (not top 10):
 | D8 | First potential | One EAM-type W potential from the verified literature list. ML potentials come after the alpha. The ZBL join (range and function) is part of the choice, recorded with the potential. | Fast and well studied. Model spread is unknown until a second potential runs. The UNVERIFIED lit notes (`docs/literature/w_potentials.md`) report that the EAM files carry no ZBL join of their own, and that threshold displacement energy depends strongly on the join. So the join is a physics decision, not a default. ML potentials with a built-in join avoid this, at higher cost per step. |
 | D9 | Stage B input size | Decide after measuring Phase 4 output sizes. Cropping around the cascade is the likely choice. | Cropping saves bandwidth but changes the boundary conditions for trapping, so it needs physics review. |
 | D10 | GPU | No GPU app version in the alpha. Use your NVIDIA GPU for local reference and benchmark runs. | Simpler client release. GPU volunteers are idle until a later app version. |
-| D11 | TPF under the stock wrapper | Rust `monitor` daemon. A gap between polls longer than 3× the poll interval counts as suspended time and is excluded (the factor needs your approval). | Works without the BOINC API. It is a heuristic. The alternative is no live TPF. |
+| D11 | TPF under the stock wrapper | TPF = BOINC `elapsed_time` / 100 per result (BOINC already excludes suspended time). Live progress shows in the BOINC Manager from the progress file LAMMPS writes. | No client code. One averaged TPF per result instead of a sample per percent. |
 | D13 | Energy check (V4) for trapping runs | Apply V4 only to the anneal MD segment, normalized per inserted atom or per atom (TODO-DECIDE). Specify the anneal thermostat in `physics_settings.md`. | Without this, a fail-closed V4 rejects every trapping result. Post-alpha, but it shapes the result schema. |
 | D12 | Faculty advisor | Find one before the public alpha announces any science results | None, except time spent looking |
 
@@ -223,3 +221,34 @@ These go into T-003 (result schema) and T-005 (validator spec) before freezing.
 - **Canaries (security review, needs your approval):** canaries must look like normal work in every field a client or the website shows: WU name from the normal sequence, normal `campaign_id`, the same replication, deadline and fpops as the tier, normal credit and counting in public tables, and identical per-WU API behavior. Seeds come from a reference-run pool large enough that no host or user gets the same canary seed twice; this replaces "fixed seed". Canaries are excluded only from science aggregates, server-side. Accepted risk: a host returned to full replication after failing a canary can guess that a recent WU was one.
 - **Credit:** one award entry point that computes `trusted` in one place, from the trust threshold.
 - **Credit job:** handle server clock skew (`elapsed_s <= 0` raises) without crashing.
+
+## 7. What is built (alpha code against the DRAFT interfaces)
+
+Written before the interfaces froze, at the human's request. Every physics value,
+threshold and calibration constant lives in `config/settings.toml` as a TODO, and the
+code refuses to run on a TODO (`server/settings.py`). Expect changes when Phase 2 freezes
+the interfaces.
+
+| Area | Files |
+|---|---|
+| Settings (fail closed) | `config/settings.toml`, `server/settings.py` |
+| Client (no project code) | `client/in.cascade.lmp`, `client/job.xml`, `client/app_version/version.xml`, `client/build_lammps.sh` |
+| BOINC config | `server/boinc/nah_cascade_in`, `server/boinc/nah_cascade_out`, `server/boinc/config_daemons.xml` |
+| Work generation | `server/workunit.py`, `server/sampler.py`, `server/work_generator.py` |
+| Parsing and analysis | `analysis/lammps_output.py`, `analysis/defects.py`, `analysis/aggregate.py` |
+| Validation | `validator/checks.py` (V1–V8), `validator/common.py`, `validator/validate_init.py`, `validator/validate_compare.py` |
+| Ingest and stats | `server/assimilator.py`, `stats/schema.sql`, `stats/jobs.py`, `stats/api.py`, `stats/ppd.py` |
+| Web | `viewer/index.html`, `viewer/cascade.html`, `viewer/cascade.js`, `viewer/style.css` |
+| Server dependencies | `requirements-server.txt` |
+
+Not built, because each needs a physics or design decision first:
+- trapping stage (template, checks V9–V10, ingest): D1, D13, trapped-vs-free criterion
+- retention model: transport model and A1–A7
+- two-temperature model: parameters TODO-LIT
+- screensaver: D5
+- quick-return bonus: D2
+
+Not verified, because LAMMPS, BOINC and the databases are not installed in the dev environment:
+- `client/in.cascade.lmp` has never been run. Every LAMMPS command and the thermostat/stopping sign conventions need a first run (T-020).
+- The `script_validator` / `script_assimilator` macro names and exit codes need checking on a BOINC server.
+- All SQL is untested against PostgreSQL and MariaDB.

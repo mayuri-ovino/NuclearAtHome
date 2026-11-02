@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cascade Viewer</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
+  </script>
+</head>
+<body>
+<main>
+  <h1>Cascade viewer</h1>
+  <form id="pick" class="controls">
+    <label>Work unit <input id="wu" name="wu" placeholder="WA-0001-00000001" pattern="[A-Z]{2}-[0-9]{4}-[0-9]{8}" required></label>
+    <button>Open</button>
+  </form>
+  <p id="info" aria-live="polite"></p>
+  <canvas id="view" aria-label="3D view of the cascade"></canvas>
+  <div class="controls">
+    <button id="play" type="button">Play</button>
+    <label>Frame <input id="frame" type="range" min="0" max="0" value="0"></label>
+    <span id="step"></span>
+    <label><input id="showVac" type="checkbox" checked> Vacancies</label>
+    <label><input id="showAtoms" type="checkbox" checked> Moving and displaced atoms</label>
+  </div>
+  <p class="lede">Spheres: atoms that are moving fast (colour = kinetic energy, blue low, red high) or sit off
+    their lattice site. Cubes: empty lattice sites (vacancies). Drag to rotate, scroll to zoom.</p>
+  <p id="error" class="err" role="alert"></p>
+</main>
+<script type="module" src="cascade.js"></script>
+</body>
+</html>

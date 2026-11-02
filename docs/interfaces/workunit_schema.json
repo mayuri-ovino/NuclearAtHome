@@ -2,7 +2,7 @@
   "_status": "DRAFT",
   "_note": "Main agent finalizes in Phase 2, then sets _status to FROZEN. Values in enums marked TODO are placeholders. Canary status is never part of a WU; it lives only in the server-side canaries table (stats_spec.md).",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "nuclear-at-home/workunit.schema.json",
+  "$id": "urn:nuclear-at-home:workunit.schema.json",
   "title": "Nuclear@Home work unit",
   "oneOf": [
     { "$ref": "#/$defs/cascade_wu" },
@@ -19,7 +19,7 @@
         "campaign_id": { "type": "string" },
         "wu_type": { "type": "string", "enum": ["cascade", "trapping"] },
         "app_version_min": { "type": "string" },
-        "random_seed": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+        "random_seed": { "type": "integer", "minimum": 1, "maximum": 899999999, "description": "LAMMPS random generators reject seeds above 900000000; the template also uses seed+1." },
         "size_tier": { "type": "string", "enum": ["small", "large", "gpu"] },
         "points": {
           "type": "number",

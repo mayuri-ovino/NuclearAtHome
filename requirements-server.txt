@@ -1,0 +1,6 @@
+# Server-side Python dependencies (volunteers install nothing; they run BOINC's wrapper + LAMMPS).
+jsonschema>=4.10        # result and WU schema validation
+numpy>=1.26             # parsing and statistics
+scipy>=1.11             # periodic k-d tree for Wigner-Seitz and clustering
+psycopg[binary]>=3.1    # PostgreSQL (science/stats DB)
+PyMySQL>=1.1            # BOINC MariaDB (read-only use)

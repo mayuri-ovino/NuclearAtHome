@@ -9,7 +9,6 @@ build/
 *.o
 *.so
 *.exe
-target/
 
 # Simulation data (large; store results outside git)
 *.dump

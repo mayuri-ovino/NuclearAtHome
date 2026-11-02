@@ -1,0 +1,61 @@
+<!-- BOINC output template for cascade results. max_nbytes are upper bounds that stop
+     oversized uploads; tighten them once Phase 4 measures real sizes. Order matters:
+     validator/validate_init.py maps files by these open names. -->
+<output_template>
+  <file_info>
+    <name><OUTFILE_0/></name>
+    <generated_locally/>
+    <upload_when_present/>
+    <max_nbytes>50000000</max_nbytes>
+    <url><UPLOAD_URL/></url>
+    <gzip_when_done/>
+  </file_info>
+  <file_info>
+    <name><OUTFILE_1/></name>
+    <generated_locally/>
+    <upload_when_present/>
+    <max_nbytes>20000000</max_nbytes>
+    <url><UPLOAD_URL/></url>
+    <gzip_when_done/>
+  </file_info>
+  <file_info>
+    <name><OUTFILE_2/></name>
+    <generated_locally/>
+    <upload_when_present/>
+    <max_nbytes>5000000</max_nbytes>
+    <url><UPLOAD_URL/></url>
+    <gzip_when_done/>
+  </file_info>
+  <file_info>
+    <name><OUTFILE_3/></name>
+    <generated_locally/>
+    <upload_when_present/>
+    <max_nbytes>100000000</max_nbytes>
+    <url><UPLOAD_URL/></url>
+    <gzip_when_done/>
+  </file_info>
+  <file_info>
+    <name><OUTFILE_4/></name>
+    <generated_locally/>
+    <upload_when_present/>
+    <max_nbytes>200000000</max_nbytes>
+    <url><UPLOAD_URL/></url>
+    <gzip_when_done/>
+  </file_info>
+  <file_info>
+    <name><OUTFILE_5/></name>
+    <generated_locally/>
+    <upload_when_present/>
+    <max_nbytes>10000</max_nbytes>
+    <url><UPLOAD_URL/></url>
+    <gzip_when_done/>
+  </file_info>
+  <result>
+    <file_ref><file_name><OUTFILE_0/></file_name><open_name>log.lammps</open_name><copy_file/></file_ref>
+    <file_ref><file_name><OUTFILE_1/></file_name><open_name>energy.txt</open_name><copy_file/></file_ref>
+    <file_ref><file_name><OUTFILE_2/></file_name><open_name>history.txt</open_name><copy_file/></file_ref>
+    <file_ref><file_name><OUTFILE_3/></file_name><open_name>snapshots.dump</open_name><copy_file/></file_ref>
+    <file_ref><file_name><OUTFILE_4/></file_name><open_name>final.dump</open_name><copy_file/></file_ref>
+    <file_ref><file_name><OUTFILE_5/></file_name><open_name>run.state</open_name><copy_file/></file_ref>
+  </result>
+</output_template>

@@ -25,8 +25,9 @@ into an open database and an estimate of tritium retained in reactor walls.
 - BOINC server (official Docker image) on Linux
 - Science code: LAMMPS (minimal build: MANYBODY, ML potential packages as needed,
   electronic stopping / two-temperature model support), checkpoint/restart enabled
-- Wrapper: BOINC's stock `wrapper` (job.xml) runs LAMMPS plus a small Rust helper
-  (progress, TPF, result packaging, checksums). No custom C++ wrapper.
+- Wrapper: BOINC's stock `wrapper` (job.xml) runs LAMMPS only. No custom wrapper and no
+  project code on volunteer machines: the server parses LAMMPS's raw output, and TPF
+  comes from BOINC's reported elapsed time (decided by the human, Phase 1).
 - Clients: Linux x86_64 only for the alpha (decided by the human, Phase 1)
 - Optional GPU app (LAMMPS GPU or KOKKOS)
 - Server-side: Python (work generator, validator, assimilator, stats)
