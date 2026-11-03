@@ -16,4 +16,6 @@ systemctl is-active --quiet boinc-client || sudo systemctl start boinc-client
 echo "BOINC server: http://192.168.1.174:8888/nuclear   Website: http://127.0.0.1:8080/"
 
 # 3. Website and 3D viewer (stays in the foreground).
-NAH_API_PG_DSN="dbname=nuclear" NAH_SCIENCE_DIR=~/nah-science python3 scripts/serve.py 8080
+# Reads the staging server's science database and files, so it shows every computer and result.
+NAH_API_PG_DSN="host=127.0.0.1 port=5433 dbname=nuclear user=postgres" NAH_SCIENCE_DIR=~/nah-staging/science \
+  python3 scripts/serve.py 8080

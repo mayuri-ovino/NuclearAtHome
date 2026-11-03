@@ -10,6 +10,10 @@ upstream="${1:-$HOME/nah-staging/boinc-server-docker}"
 # Address volunteers reach staging at: 127.0.0.1 (this computer only) or this computer's LAN address
 # (other PCs on your home network). Never a public address: staging uses a test signing key.
 host="${STAGING_HOST:-127.0.0.1}"
+# Science files (WU records, results, 3D snapshots) in a normal folder, so the local website
+# (server.sh) can serve them; inside the container it is /srv/nuclear/science, owned by uid 1000.
+science="${STAGING_SCIENCE:-$HOME/nah-staging/science}"
+mkdir -p "$science"
 
 wrapper="$repo/client/app_version/wrapper_26018_x86_64-pc-linux-gnu"
 if [ ! -f "$wrapper" ]; then
@@ -38,7 +42,7 @@ services:
       - NAH_PYTHON=/opt/py312/bin/python3
     volumes:
       - "$repo:/opt/nuclear-at-home:ro"
-      - "science:/srv/nuclear/science"
+      - "$science:/srv/nuclear/science"
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
@@ -46,7 +50,6 @@ services:
     ports: ["127.0.0.1:5433:5432"]
     volumes: ["pgdata:/var/lib/postgresql/data"]
 volumes:
-  science:
   pgdata:
 YML
 

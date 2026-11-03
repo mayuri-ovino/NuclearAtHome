@@ -6,8 +6,8 @@ from stats.api import make_app
 
 
 def fake_query(sql, args):
-    if "FROM privacy p JOIN wu_results" in sql:  # host 5's owner shows hosts; host 7's does not
-        return [(1,)] if args == (5,) else []
+    if "FROM privacy p JOIN hosts" in sql:  # hosts 5 and 8 are shown by their owners; host 7's is not
+        return [(1,)] if args in ((5,), (8,)) else []
     if "FROM privacy WHERE" in sql:  # user 1 consented to stats export, user 2 did not
         return [(1,)] if args == (1,) else []
     if "FROM host_daily" in sql:
@@ -78,6 +78,13 @@ class TestAPI(unittest.TestCase):
     def test_team_shown_only_with_two_members(self):
         self.assertEqual(call("/api/v1/teams/3")[0], "200 OK")
         self.assertEqual(call("/api/v1/teams/4")[0], "404 Not Found")
+
+    def test_new_host_shown_before_its_first_result(self):
+        status, body = call("/api/v1/hosts/8")  # owner shows hosts, no daily stats yet
+        self.assertEqual(status, "200 OK")
+        data = json.loads(body)
+        self.assertIsNone(data["est_ppd"])
+        self.assertEqual(data["wus_valid_30d"], 0)
 
     def test_unknown_host_404(self):
         self.assertEqual(call("/api/v1/hosts/6")[0], "404 Not Found")

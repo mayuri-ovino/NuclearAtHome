@@ -52,18 +52,17 @@ def _float_arg(qs: dict, name: str) -> float | None:
 
 def host(query: Query, host_id: str, qs) -> dict | None:
     """Host stats, only if the owner lets BOINC show their computers. Times are rounded to the
-    day, so the API does not reveal when a computer is switched on."""
+    day, so the API does not reveal when a computer is switched on. A new computer is shown from
+    its first contact (hardware, tasks); its points appear once results are validated."""
     hid = int(host_id)
-    if not query("""SELECT 1 FROM privacy p JOIN wu_results r ON r.user_id = p.user_id
-                     WHERE r.host_id = %s AND p.show_hosts LIMIT 1""", (hid,)):
+    if not query("""SELECT 1 FROM privacy p JOIN hosts h ON h.user_id = p.user_id
+                     WHERE h.host_id = %s AND p.show_hosts""", (hid,)):
         return None
     rows = query("""SELECT day, points, wus_valid, wus_invalid, est_ppd, actual_ppd_7d FROM host_daily
                     WHERE host_id = %s ORDER BY day DESC LIMIT 30""", (hid,))
-    if not rows:
-        return None
     tpf = query("""SELECT date_trunc('day', recorded_at)::date, tpf_s FROM tpf_samples WHERE host_id = %s
                    ORDER BY recorded_at DESC LIMIT 100""", (hid,))
-    latest = rows[0]
+    latest = rows[0] if rows else (None,) * 6
     hardware = query("SELECT cpu_model, gpu, os_name, ncpus FROM hosts WHERE host_id = %s", (hid,))
     tasks = query("""SELECT h.wu_name, h.plan_class, h.status, h.sent_at::date, h.reported_at::date,
                             c.snapshot_file IS NOT NULL FROM host_results h

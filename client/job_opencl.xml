@@ -1,11 +1,14 @@
 <!-- BOINC stock wrapper job description for the OpenCL GPU app version (core 0xa2).
      Same input as the CPU version; -sf gpu -pk gpu 1 moves the EAM potential (pair eam/fs/gpu)
      onto the GPU, everything else stays on the CPU. "neigh no": neighbour lists on the CPU, because
-     GPU-built lists crash (OpenCL -9999) in the dense cascade core. Peak host RAM 536 MB at 250k atoms (was 13 GB before the template's run pre no fix, 2026-11-02). -->
+     GPU-built lists crash (OpenCL -9999) in the dense cascade core. Peak host RAM 536 MB at 250k atoms (was 13 GB before the template's run pre no fix, 2026-11-02).
+     "device_type nvidiagpu gpuID N": use the NVIDIA card BOINC assigned ($GPU_DEVICE_NUM, filled in
+     by the wrapper). Without it LAMMPS picks the GPU platform with the most compute units, which on
+     laptops is often Intel's integrated GPU (no double precision: every task failed at once). -->
 <job_desc>
   <task>
     <application>lmp</application>
-    <command_line>-in in.cascade.lmp -log none -screen none -sf gpu -pk gpu 1 neigh no</command_line>
+    <command_line>-in in.cascade.lmp -log none -screen none -sf gpu -pk gpu 1 neigh no device_type nvidiagpu gpuID $GPU_DEVICE_NUM</command_line>
     <checkpoint_filename>checkpoint.state</checkpoint_filename>
     <fraction_done_filename>progress.txt</fraction_done_filename>
   </task>
