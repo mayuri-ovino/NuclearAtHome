@@ -1,17 +1,22 @@
 #!/usr/bin/env python3
-"""Local web server for the Nuclear@Home site: static pages from viewer/ plus the read-only API.
+r"""Local web server for the Nuclear@Home site: static pages from viewer/ plus the read-only API.
 
 Standard library only (no nginx needed locally). Production and the Raspberry Pi use nginx +
 gunicorn instead (docs/deploy.md). Binds to 127.0.0.1 only.
 
     NAH_API_PG_DSN="dbname=nuclear" NAH_SCIENCE_DIR=~/nah-science python3 scripts/serve.py [port]
 
-Live view of a task running on this computer: set NAH_LIVE_DIR to its BOINC slot folder
-(e.g. /var/lib/boinc-client/slots/0, readable with `sg boinc`) and open /cascade.html?live=1.
-Only snapshots.dump, progress.txt and history.txt are served from it.
+Live view of the tasks running on this computer: open /cascade.html?live=1. The BOINC slot folders
+are found in the usual data folder (Windows: C:\ProgramData\BOINC; Linux: /var/lib/boinc-client,
+readable with `sg boinc`); NAH_BOINC_DATA overrides it, NAH_LIVE_DIR serves one folder as slot 0.
+Only snapshots.dump, progress.txt and history.txt are served from a slot. Needs no database.
+
+Windows: install Python 3.11+ from python.org, then in this folder:  py scripts\serve.py
 """
+import json
 import mimetypes
 import os
+import re
 import sys
 from pathlib import Path
 from socketserver import ThreadingMixIn
@@ -28,6 +33,38 @@ RESULTS = Path(load()["storage"]["science_dir"]) / "results"
 HEADERS = [("X-Content-Type-Options", "nosniff"), ("Referrer-Policy", "no-referrer")]
 LIVE_DIR = Path(os.environ["NAH_LIVE_DIR"]) if os.environ.get("NAH_LIVE_DIR") else None
 LIVE_FILES = {"snapshots.dump", "progress.txt", "history.txt"}
+BOINC_DATA = [Path(os.environ["NAH_BOINC_DATA"])] if os.environ.get("NAH_BOINC_DATA") else [
+    Path(os.environ.get("ProgramData", r"C:\ProgramData")) / "BOINC",  # Windows
+    Path("/var/lib/boinc-client"), Path("/var/lib/boinc")]           # Linux (Debian/Ubuntu, others)
+
+
+def live_slots() -> dict[str, Path]:
+    """Slot number -> folder, for every BOINC slot running a Nuclear@Home cascade on this computer."""
+    if LIVE_DIR:
+        return {"0": LIVE_DIR}
+    slots = {}
+    for data in BOINC_DATA:
+        try:
+            for slot in (data / "slots").iterdir():
+                if slot.name.isdigit() and (slot / "in.cascade.lmp").is_file():
+                    slots[slot.name] = slot
+        except OSError:  # missing, or not readable by this user
+            continue
+    return slots
+
+
+def live_tasks() -> list[dict]:
+    """The running cascades, most advanced first: slot, work unit name, fraction done."""
+    tasks = []
+    for name, slot in live_slots().items():
+        try:
+            params = (slot / "params.lmp").read_text()
+            progress = float((slot / "progress.txt").read_text().strip() or 0)
+        except (OSError, ValueError):
+            params, progress = "", 0.0
+        wu = re.search(r"variable wu_name string (\S+)", params)
+        tasks.append({"slot": name, "wu": wu.group(1) if wu else "?", "progress": progress})
+    return sorted(tasks, key=lambda task: -task["progress"])
 
 
 def file_under(base: Path, rel: str) -> Path | None:
@@ -38,6 +75,9 @@ def file_under(base: Path, rel: str) -> Path | None:
 
 def app(environ, start):
     path = environ.get("PATH_INFO", "/")
+    if path.startswith("/api/") and not os.environ.get("NAH_API_PG_DSN"):
+        start("503 Service Unavailable", [("Content-Type", "application/json")] + HEADERS)
+        return [b'{"error": "no science database on this computer (live view only)"}']
     if path.startswith("/api/"):
         captured = {}
         body = api(environ, lambda status, headers: captured.update(status=status, headers=headers))
@@ -48,9 +88,14 @@ def app(environ, start):
         target = file_under(RESULTS, accel[len("/_results/"):])  # nginx's internal handoff, done here locally
     elif path.startswith("/_results/"):
         target = None  # internal only, like nginx's "internal" location
-    elif path.startswith("/live/"):
-        name = path[len("/live/"):]
-        target = file_under(LIVE_DIR, name) if LIVE_DIR and name in LIVE_FILES else None
+    elif path == "/live/tasks.json":
+        data = json.dumps(live_tasks()).encode()
+        start("200 OK", [("Content-Type", "application/json"), ("Cache-Control", "no-store")] + HEADERS)
+        return [data]
+    elif path.startswith("/live/"):  # /live/<slot>/<file>
+        slot, _, name = path[len("/live/"):].partition("/")
+        folder = live_slots().get(slot)
+        target = file_under(folder, name) if folder and name in LIVE_FILES else None
     else:
         target = file_under(VIEWER, path.lstrip("/") or "index.html")
     if target is None:

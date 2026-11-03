@@ -64,7 +64,7 @@ async function readText(url) {
 }
 
 function parseDump(text) {
-  const lines = text.split("\n");
+  const lines = text.split(/\r?\n/);  // Windows LAMMPS writes \r\n
   const out = [];
   for (let i = 0; i + 1 < lines.length && lines[i] === "ITEM: TIMESTEP";) {
     const step = Number(lines[i + 1]);
@@ -163,16 +163,39 @@ function frameCamera() {
     setView(0);
 }
 
-// Live mode: a task running on this computer, served read-only by scripts/serve.py (NAH_LIVE_DIR).
+// Live mode: the tasks running on this computer, served read-only by scripts/serve.py.
+let liveSlot = new URLSearchParams(location.search).get("slot");
+
+async function listTasks() {
+  const tasks = await (await fetch("/live/tasks.json", { cache: "no-store" })).json();
+  const select = $("task");
+  const options = tasks.map((t) => {
+    const o = document.createElement("option");
+    o.value = t.slot;
+    o.textContent = `${t.wu} · ${(t.progress * 100).toFixed(0)}%`;
+    return o;
+  });
+  select.replaceChildren(...options);
+  if (!tasks.some((t) => t.slot === liveSlot)) liveSlot = tasks.length ? tasks[0].slot : null;  // most advanced
+  select.value = liveSlot ?? "";
+  $("task-pick").hidden = !tasks.length;
+  return tasks.length;
+}
+
 async function pollLive() {
   try {
-    const progress = Number(await (await fetch("/live/progress.txt", { cache: "no-store" })).text());
-    const r = await fetch("/live/snapshots.dump", { cache: "no-store" });
+    if (!(await listTasks())) {
+      $("facts").replaceChildren(...fact("Work unit", "no Nuclear@Home task is running on this computer"));
+      return;
+    }
+    const base = `/live/${encodeURIComponent(liveSlot)}`;
+    const progress = Number(await (await fetch(`${base}/progress.txt`, { cache: "no-store" })).text());
+    const r = await fetch(`${base}/snapshots.dump`, { cache: "no-store" });
     const fresh = r.ok ? parseDump(await r.text()) : [];
     const following = current >= frames.length - 1;
     const first = !frames.length && fresh.length;
     frames = fresh;
-    $("facts").replaceChildren(...fact("Work unit", "running on this computer"),
+    $("facts").replaceChildren(...fact("Work unit", $("task").selectedOptions[0]?.textContent.split(" · ")[0] ?? "–"),
       ...fact("Progress", Number.isFinite(progress) ? `${(progress * 100).toFixed(1)}% of 20 ps` : "warming up"),
       ...fact("Frames", frames.length || "none yet (cascade starts after the 10 ps warm-up)"), ...fact("Step", "–", "f-step"));
     if (first) frameCamera();
@@ -222,6 +245,11 @@ addEventListener("keydown", (e) => {
 });
 $("pick").addEventListener("submit", (e) => { e.preventDefault(); open($("wu").value.trim()); });
 const params = new URLSearchParams(location.search);
+$("task").addEventListener("change", (e) => {
+  liveSlot = e.target.value;
+  frames = [];  // a different cascade: refit the camera to it
+  pollLive();
+});
 if (params.has("live")) {
   $("pick").hidden = true;
   pollLive();

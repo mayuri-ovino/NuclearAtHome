@@ -50,6 +50,20 @@ class TestRecord(unittest.TestCase):
         self.assertEqual(result["run"]["tpf_samples_s"], [36.0])
         self.assertEqual(result["energy_log"][0]["step"], 0)
 
+    def test_windows_line_endings_parse_the_same(self):
+        record = wu()
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = write_result(Path(tmp), record, frenkel=2)
+            build = lambda: build_cascade_record(files_by_name(paths), wu=record, a0=3.0, app_version="1",
+                                                 elapsed_s=3600.0, vacancy_cutoff=2.9, interstitial_cutoff=2.9)
+            unix = build()
+            for path in paths:  # the Windows build writes \r\n
+                Path(path).write_bytes(Path(path).read_bytes().replace(b"\n", b"\r\n"))
+            windows = build()
+        for record_ in (unix, windows):
+            record_.pop("integrity")  # file hashes differ by construction
+        self.assertEqual(unix, windows)
+
     def test_gzipped_and_restarted_results(self):
         result = self.build(gz=True, restart=True)
         self.assertEqual(len(result["energy_log"]), 101)
