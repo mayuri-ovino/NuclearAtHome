@@ -18,7 +18,7 @@ temperatures_k = [300.0]                  # benchmark temperature
 target_per_bin = 100                      # Warrier & Bhardwaj: 100 directions per energy
 canary_fraction = 0.02                    # decision log: 2% of WUs
 size_tiers = [[260000, "small"], [5000000, "large"]]  # [max atoms, tier]; PROMPT.md: Small ~250k atoms, Large 1-5M
-max_in_flight = 20                        # WUs created but not yet assimilated (ops; raise for the public alpha)
+max_in_flight = 100                       # WUs created but not yet assimilated (ops; two machines with 56 threads drained 20)
 
 [potentials.W_EAM_A]
 lattice = "bcc"

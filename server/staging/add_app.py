@@ -13,9 +13,12 @@ DAEMONS = [
     "--init_script \"nah_validate_init result_id runtime files\" --compare_script \"nah_validate_compare\"",
     "script_assimilator -d 3 --app " + APP + " --script \"nah_assimilate wu_id files\"",
 ]
+# Tasks in progress per computer: per CPU thread, and per GPU. Keeps one big machine from taking the
+# whole queue (a 32-thread PC took 34 of 40 tasks) while keeping it busy.
+LIMITS = {"max_wus_in_progress": "2", "max_wus_in_progress_gpu": "2"}
 # Periodic jobs, run by BOINC's own "bin/start --cron" (crontab, every 5 minutes): (cmd, period, disabled)
 TASKS = [
-    ("nah_generate", "10 min", True),   # off until switched on: it keeps max_in_flight WUs queued
+    ("nah_generate", "10 min", True),   # off on a new project; switched on with autogen.sh (kept on re-runs)
     ("nah_stats hourly", "1 hour", False),
     ("nah_stats daily", "1 day", False),
 ]
@@ -40,16 +43,25 @@ def main(root):
     tasks = config.getroot().find("tasks")
     if tasks is None:
         tasks = ET.SubElement(config.getroot(), "tasks")
+    was_disabled = {}
     for task in list(tasks):  # replace ours, keep BOINC's own tasks
         if (task.findtext("cmd") or "").startswith("nah_"):
+            was_disabled[task.findtext("cmd")] = task.findtext("disabled") == "1"
             tasks.remove(task)
     for cmd, period, disabled in TASKS:
+        disabled = was_disabled.get(cmd, disabled)  # keep an on/off switch made with autogen.sh
         task = ET.SubElement(tasks, "task")
         ET.SubElement(task, "cmd").text = cmd
         ET.SubElement(task, "period").text = period
         ET.SubElement(task, "output").text = cmd.replace(" ", "_") + ".out"
         if disabled:
             ET.SubElement(task, "disabled").text = "1"
+    settings = config.getroot().find("config")
+    for name, value in sorted(LIMITS.items()):
+        element = settings.find(name)
+        if element is None:
+            element = ET.SubElement(settings, name)
+        element.text = value
     config.write(config_xml)
 
 
