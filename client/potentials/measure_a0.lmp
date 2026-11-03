@@ -1,0 +1,25 @@
+# Lattice constant of bcc W at temperature T and 0 bar with the project potential (NPT).
+# Usage (in a folder holding potential.mod and potential.dat):
+#   lmp -in measure_a0.lmp -var T 600 -log a0_600.log
+# Prints "A0 <T> <mean a0> <std a0>": the mean over the last 20 ps of a 30 ps run, 16^3 cells.
+units           metal
+boundary        p p p
+atom_style      atomic
+lattice         bcc 3.1652                   # 0 K value of W_EAM_A as the start
+region          box block 0 16 0 16 0 16
+create_box      1 box
+create_atoms    1 box
+mass            1 183.84
+include         potential.mod
+velocity        all create $(2*v_T) 4928459 mom yes rot yes dist gaussian
+timestep        0.001
+fix             npt all npt temp ${T} ${T} 0.1 iso 0.0 0.0 1.0
+thermo          1000
+run             10000                        # 10 ps to equilibrate
+reset_timestep  0                            # ave/time reports at multiples of 20000 steps
+variable        a equal lx/16
+fix             avg all ave/time 10 2000 20000 v_a ave one
+variable        a2 equal v_a*v_a
+fix             avg2 all ave/time 10 2000 20000 v_a2 ave one
+run             20000                        # 20 ps average
+print           "A0 ${T} $(f_avg:%.5f) $(sqrt(f_avg2-f_avg*f_avg):%.5f)"

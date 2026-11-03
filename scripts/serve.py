@@ -2,7 +2,8 @@
 r"""Local web server for the Nuclear@Home site: static pages from viewer/ plus the read-only API.
 
 Standard library only (no nginx needed locally). Production and the Raspberry Pi use nginx +
-gunicorn instead (docs/deploy.md). Binds to 127.0.0.1 only.
+gunicorn instead (docs/deploy.md). Binds to 127.0.0.1, or NAH_WEB_HOST (e.g. this computer's
+home-network address, so other PCs on the network can open it; never a public address).
 
     NAH_API_PG_DSN="dbname=nuclear" NAH_SCIENCE_DIR=~/nah-science python3 scripts/serve.py [port]
 
@@ -111,12 +112,15 @@ class ThreadingServer(ThreadingMixIn, WSGIServer):
     daemon_threads = True
 
 
+HOST = os.environ.get("NAH_WEB_HOST", "127.0.0.1")
+
+
 if __name__ == "__main__":
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8080
     try:
-        server = make_server("127.0.0.1", port, app, server_class=ThreadingServer)
+        server = make_server(HOST, port, app, server_class=ThreadingServer)
     except OSError as error:
         sys.exit(f"Port {port} is busy ({error.strerror}). Stop the other server, or pick a port: "
                  f"python3 scripts/serve.py {port + 10}")
-    print(f"Nuclear@Home on http://127.0.0.1:{port}/  (Ctrl+C to stop)")
+    print(f"Nuclear@Home on http://{HOST}:{port}/  (Ctrl+C to stop)")
     server.serve_forever()

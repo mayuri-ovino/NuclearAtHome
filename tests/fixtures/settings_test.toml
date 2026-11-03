@@ -23,7 +23,7 @@ max_in_flight = 10
 
 [potentials.W_EAM_A]
 lattice = "bcc"
-lattice_constant_angstrom = 3.0
+lattice_constant_angstrom = { "300" = 3.0 }
 # LAMMPS commands (pair_style, pair_coeff incl. the ZBL join) that read potential.dat.
 # Written only once the potential and its join are approved (D8).
 mod_file = "client/potentials/W_EAM_A.mod"
@@ -80,8 +80,8 @@ app_name = "nuclear_cascade"
 project_dir = "/home/boincadm/projects/nuclear"
 wu_template = "templates/nah_cascade_in"
 result_template = "templates/nah_cascade_out"
-small = { fpops_est = 1e12, fpops_bound = 1e13, memory_bytes = 1e9, delay_bound_s = 86400 }
-large = { fpops_est = 1e13, fpops_bound = 1e14, memory_bytes = 4e9, delay_bound_s = 259200 }
+small = { fpops_est = 1e12, fpops_bound = 1e13, memory_bytes = 1e9, delay_bound_s = 86400, size_class = 0 }
+large = { fpops_est = 1e13, fpops_bound = 1e14, memory_bytes = 4e9, delay_bound_s = 259200, size_class = 1 }
 min_quorum = 2                            # validator_spec.md: new hosts always replicated
 target_nresults = 2
 

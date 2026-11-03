@@ -77,7 +77,10 @@ docker compose exec -T -u boincadm apache bash -c 'for v in NAH_PYTHON NAH_PG_DS
 docker compose exec -T mysql mysql nuclear -e "
 UPDATE workunit SET xml_doc = REGEXP_REPLACE(xml_doc, 'http://[0-9.]+:8888/', 'http://$host:8888/') WHERE assimilate_state < 2;
 UPDATE result SET xml_doc_in = REGEXP_REPLACE(xml_doc_in, 'http://[0-9.]+:8888/', 'http://$host:8888/') WHERE server_state < 5;
-UPDATE app_version SET xml_doc = REGEXP_REPLACE(xml_doc, 'http://[0-9.]+:8888/', 'http://$host:8888/');"
+UPDATE app_version SET xml_doc = REGEXP_REPLACE(xml_doc, 'http://[0-9.]+:8888/', 'http://$host:8888/');
+UPDATE app SET n_size_classes = 2 WHERE name = 'nuclear_cascade';"  # job size matching (settings: boinc.*.size_class)
+# Speed ranks for job size matching now, not only at the daily task (the scheduler needs the file).
+docker compose exec -T -u boincadm apache bash -c 'cd $PROJECT_ROOT/html/ops && php size_census.php --all_apps' >/dev/null
 # Restart the daemons after the rewrite: the feeder caches app versions and work.
 docker compose exec -T -u boincadm apache bash -c 'cd $PROJECT_ROOT && bin/stop && bin/start'
 for _ in $(seq 30); do docker compose exec -T postgres pg_isready -U postgres -q && break; sleep 2; done

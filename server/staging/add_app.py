@@ -21,6 +21,7 @@ TASKS = [
     ("nah_generate", "10 min", True),   # off on a new project; switched on with autogen.sh (kept on re-runs)
     ("nah_stats hourly", "1 hour", False),
     ("nah_stats daily", "1 day", False),
+    ("run_in_ops size_census.php", "1 day", False),  # computer speed ranks for job size matching
 ]
 
 
@@ -45,7 +46,7 @@ def main(root):
         tasks = ET.SubElement(config.getroot(), "tasks")
     was_disabled = {}
     for task in list(tasks):  # replace ours, keep BOINC's own tasks
-        if (task.findtext("cmd") or "").startswith("nah_"):
+        if (task.findtext("cmd") or "").startswith(("nah_", "run_in_ops size_census")):
             was_disabled[task.findtext("cmd")] = task.findtext("disabled") == "1"
             tasks.remove(task)
     for cmd, period, disabled in TASKS:

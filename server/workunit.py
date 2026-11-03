@@ -11,7 +11,7 @@ import math
 
 import jsonschema
 
-from server.settings import ROOT, require
+from server.settings import ROOT, TodoValue, require
 
 WU_SCHEMA = json.loads((ROOT / "docs" / "interfaces" / "workunit_schema.json").read_text())
 ATOMS_PER_CELL = {"bcc": 2, "fcc": 4}
@@ -91,6 +91,16 @@ def make_cascade_wu(settings: dict, *, serial: int, energy_ev: float, temperatur
     return wu
 
 
+def lattice_constant(settings: dict, potential_id: str, temperature_k: float) -> float:
+    """The measured lattice constant of this potential at this temperature (no interpolation:
+    an unmeasured temperature raises TodoValue, so no work unit starts from a strained crystal)."""
+    table = require(settings, f"potentials.{potential_id}.lattice_constant_angstrom")
+    key = f"{temperature_k:g}"
+    if key not in table:
+        raise TodoValue(f"no measured lattice constant for {potential_id} at {key} K")
+    return table[key]
+
+
 def render_params(settings: dict, wu: dict) -> str:
     """params.lmp for the LAMMPS template. Every value is a LAMMPS variable definition."""
     sim = "simulation"
@@ -101,7 +111,7 @@ def render_params(settings: dict, wu: dict) -> str:
     values = {
         "seed": wu["random_seed"],
         "n": wu["box"]["unit_cells"][0],
-        "a0": require(settings, f"potentials.{wu['material']['potential_id']}.lattice_constant_angstrom"),
+        "a0": lattice_constant(settings, wu["material"]["potential_id"], wu["temperature_k"]),
         "temp": wu["temperature_k"],
         "pka_e": wu["pka"]["energy_ev"],
         "pka_dx": wu["pka"]["direction"][0],

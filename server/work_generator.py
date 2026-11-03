@@ -68,6 +68,7 @@ def create_work(settings: dict, project_dir: Path, wu: dict, params_name: str, s
            "--rsc_fpops_bound", str(require(settings, f"{b}.{tier}.fpops_bound")),
            "--rsc_memory_bound", str(require(settings, f"{b}.{tier}.memory_bytes")),
            "--delay_bound", str(require(settings, f"{b}.{tier}.delay_bound_s")),
+           "--size_class", str(require(settings, f"{b}.{tier}.size_class")),  # big WUs to fast computers
            "--min_quorum", str(require(settings, f"{b}.min_quorum")),
            "--target_nresults", str(require(settings, f"{b}.target_nresults")),
            "--credit", f"{wu['points']:.6f}",  # sets wu.canonical_credit, which --credit_from_wu grants (sched/validator.cpp)

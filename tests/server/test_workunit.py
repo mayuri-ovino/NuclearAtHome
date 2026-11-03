@@ -40,6 +40,17 @@ class TestWorkunit(unittest.TestCase):
         self.assertEqual(params["lat"], "bcc")
         self.assertEqual(float(params["max_time"]), 10.0)
 
+    def test_lattice_constant_per_temperature(self):
+        repo = load()
+        for temperature, a0 in ((300.0, "3.1674"), (600.0, "3.1726"), (1025.0, "3.1837")):
+            record = make_cascade_wu(repo, serial=1, energy_ev=5000.0, temperature_k=temperature,
+                                     direction=(1, 0, 0), seed=1)
+            self.assertEqual(parse_params(render_params(repo, record))["a0"], a0)
+        unmeasured = make_cascade_wu(repo, serial=1, energy_ev=5000.0, temperature_k=900.0,
+                                     direction=(1, 0, 0), seed=1)
+        with self.assertRaises(TodoValue):  # never a strained crystal from another temperature's a0
+            render_params(repo, unmeasured)
+
     def test_undecided_settings_refuse(self):
         s = settings()
         s["simulation"]["dt_max_ps"] = "TODO-DECIDE"
