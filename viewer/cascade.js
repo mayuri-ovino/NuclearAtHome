@@ -163,6 +163,29 @@ function frameCamera() {
     setView(0);
 }
 
+// Demonstration mode (?demo=1): replays recent validated volunteer cascades, one after another.
+// Nothing is computed for it: the server only serves stored result files.
+const DEMO_LOOPS = 3;
+let demo = null;  // {list, index} once started
+
+async function nextDemo() {
+  setPlaying(false);
+  if (!demo) {
+    const { workunits } = await (await fetch("/api/v1/workunits/recent")).json();
+    demo = { list: workunits.filter((w) => w.has_3d).map((w) => w.wu_id), index: -1 };
+  }
+  if (!demo.list.length) {
+    $("error").textContent = "No validated cascades with 3D data yet.";
+    return;
+  }
+  demo.index = (demo.index + 1) % demo.list.length;
+  await open(demo.list[demo.index]);
+  $("facts").prepend(...fact("Showing", "a replay of a finished cascade, computed by a volunteer"));
+  loops = 0;
+  show(0);
+  setPlaying(true);
+}
+
 // Live mode: the tasks running on this computer, served read-only by scripts/serve.py.
 let liveSlot = new URLSearchParams(location.search).get("slot");
 
@@ -215,11 +238,18 @@ function resize() {
   }
 }
 let last = 0;
+let loops = 0;  // demonstration mode: full playbacks of the current cascade
 renderer.setAnimationLoop((t) => {
   resize();
   if (playing && frames.length && t - last > 250) {
     last = t;
-    show(current + 1 < frames.length ? current + 1 : 0);
+    if (current + 1 < frames.length) {
+      show(current + 1);
+    } else if (demo && ++loops >= DEMO_LOOPS) {
+      nextDemo();
+    } else {
+      show(0);
+    }
   }
   controls.update();
   renderer.render(scene, camera);
@@ -250,7 +280,10 @@ $("task").addEventListener("change", (e) => {
   frames = [];  // a different cascade: refit the camera to it
   pollLive();
 });
-if (params.has("live")) {
+if (params.has("demo")) {
+  $("pick").hidden = true;
+  nextDemo().catch((e) => { $("error").textContent = `Could not start the demonstration: ${e.message}`; });
+} else if (params.has("live")) {
   $("pick").hidden = true;
   pollLive();
   setInterval(pollLive, 10000);
