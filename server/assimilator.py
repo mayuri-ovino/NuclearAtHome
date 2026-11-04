@@ -82,7 +82,7 @@ def store_result(settings: dict, wu_name: str, wu: dict, record: dict, meta: dic
     outlier = is_outlier(settings, wu, cascade["n_vacancies"])
 
     store = Path(require(settings, "storage.science_dir")) / "results" / wu_name
-    store.mkdir(parents=True, exist_ok=True)
+    store.mkdir(exist_ok=True)  # no parents: a missing results/ (USB drive unplugged) must fail, and BOINC retries
     for index, path in enumerate(paths):
         if index == SNAPSHOT_INDEX:  # read back by the 3D viewer, which inflates gzip itself
             shutil.copy2(path, store / Path(path).name)

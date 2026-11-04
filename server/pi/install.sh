@@ -65,9 +65,14 @@ id "$USER_NAME" >/dev/null 2>&1 || useradd --create-home --shell /bin/bash "$USE
 id nah >/dev/null 2>&1 || useradd --system --home "$REPO" --shell /usr/sbin/nologin nah
 usermod -aG "$USER_NAME" www-data
 chmod g+rx "$HOME_DIR"
-mkdir -p "$SCIENCE" "$BOINC_SRC"
-chown "$USER_NAME:$USER_NAME" "$SCIENCE" "$BOINC_SRC"
-chmod 755 /srv/nuclear "$SCIENCE"
+mkdir -p /srv/nuclear "$BOINC_SRC"
+chown "$USER_NAME:$USER_NAME" "$BOINC_SRC"
+# A USB drive (config/staging.conf) is linked in, so every path stays the same; a missing drive leaves a dangling link.
+store=$(bash "$REPO/server/staging/science_dir.sh" "$SCIENCE")
+if [ "$store" != "$SCIENCE" ]; then ln -sfn "$store" "$SCIENCE"; fi
+mkdir -p "$SCIENCE/results" "$SCIENCE/wu"
+chown -R "$USER_NAME:$USER_NAME" "$SCIENCE/"
+chmod 755 /srv/nuclear
 
 echo "== BOINC server, from source (takes a while on a Pi)"
 if [ ! -x "$BOINC_SRC/sched/cgi" ]; then

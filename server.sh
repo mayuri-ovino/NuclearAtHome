@@ -29,5 +29,5 @@ echo "BOINC server: http://$lan:8888/nuclear   Website: http://$lan:8080/"
 # 3. Website and 3D viewer (stays in the foreground).
 # Reads the staging server's science database and files, so it shows every computer and result.
 # NAH_WEB_HOST: other PCs on the home network can open the site at this address.
-NAH_WEB_HOST=$lan NAH_API_PG_DSN="host=127.0.0.1 port=5433 dbname=nuclear user=postgres" NAH_SCIENCE_DIR=~/nah-staging/science \
+NAH_WEB_HOST=$lan NAH_API_PG_DSN="host=127.0.0.1 port=5433 dbname=nuclear user=postgres" NAH_SCIENCE_DIR="$(bash server/staging/science_dir.sh ~/nah-staging/science)" \
   python3 scripts/serve.py 8080

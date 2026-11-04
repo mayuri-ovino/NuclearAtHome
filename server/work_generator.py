@@ -79,7 +79,7 @@ def create_work(settings: dict, project_dir: Path, wu: dict, params_name: str, s
 def save_record(settings: dict, wu: dict, params: str) -> Path:
     """Write the WU record and params; exclusive create, so an existing record is never overwritten."""
     wu_dir = Path(require(settings, "storage.science_dir")) / "wu"
-    wu_dir.mkdir(parents=True, exist_ok=True)
+    wu_dir.mkdir(exist_ok=True)  # no parents: a missing science folder (USB drive unplugged) must fail
     with open(wu_dir / f"{wu['wu_id']}.json", "x") as handle:
         json.dump(wu, handle, indent=1)
     params_path = wu_dir / f"{wu['wu_id']}.params.lmp"

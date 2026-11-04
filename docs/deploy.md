@@ -56,6 +56,21 @@ the key and sign offline (`crypt_prog`, `sign_executable`), and put `code_sign_p
 key exists on the Pi. Tested end to end in a clean Debian bookworm container (x86_64), not yet on a
 real Pi.
 
+### Storing results on a USB drive
+
+Results are about 3 MB each, so a drive helps. On a Pi, format it ext4 and mount it permanently
+(fstab with `nofail`), since the BOINC user must own the files; on a laptop, exFAT also works.
+
+```bash
+mkdir -p /media/you/DRIVE/nuclear/results /media/you/DRIVE/nuclear/wu
+rsync -a ~/nah-staging/science/ /media/you/DRIVE/nuclear/     # keep existing results
+```
+
+Set `science_dir=/media/you/DRIVE/nuclear` in `config/staging.conf`, then run `./server.sh` (on a Pi,
+rerun `install.sh`). If the drive is unplugged, storing fails instead of filling the internal disk:
+BOINC keeps results and retries, and the generator stops making work. Plug it back in, then rerun
+`./server.sh` (staging) so Docker sees it again. Back the drive up: it holds the science data.
+
 ### Only the website and database
 
 Any Pi 4 or 5 with 2 GB or more and Raspberry Pi OS (64-bit) works for this:

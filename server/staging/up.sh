@@ -12,8 +12,8 @@ upstream="${1:-$HOME/nah-staging/boinc-server-docker}"
 host="${STAGING_HOST:-$(bash "$repo/server/staging/address.sh")}"
 # Science files (WU records, results, 3D snapshots) in a normal folder, so the local website
 # (server.sh) can serve them; inside the container it is /srv/nuclear/science, owned by uid 1000.
-science="${STAGING_SCIENCE:-$HOME/nah-staging/science}"
-mkdir -p "$science"
+science="${STAGING_SCIENCE:-$(bash "$repo/server/staging/science_dir.sh" "$HOME/nah-staging/science")}"
+mkdir -p "$science/results" "$science/wu"
 
 wrapper="$repo/client/app_version/wrapper_26018_x86_64-pc-linux-gnu"
 if [ ! -f "$wrapper" ]; then
@@ -64,7 +64,7 @@ docker compose exec -T -u root apache bash -c "test -x /opt/py312/bin/python3 ||
   && echo '6a79e922e50006b601f29e688407659da1c2b86ebcd4e9c7254cf234be8b89de  py.tgz' | sha256sum -c - \
   && tar -xzf py.tgz -C /opt && mv /opt/python /opt/py312 && rm py.tgz \
   && /opt/py312/bin/python3 -m pip install -q --no-cache-dir -r /opt/nuclear-at-home/requirements-server.txt); \
-  mkdir -p /srv/nuclear/science && chown 1000:1000 /srv/nuclear/science"
+  mkdir -p /srv/nuclear/science && chown 1000:1000 /srv/nuclear/science || true"  # exFAT drives refuse chown
 # App, templates, daemons; signed by the makeproject container (staging key).
 docker compose run --rm -T makeproject bash /opt/nuclear-at-home/server/staging/install_app.sh
 # Our wrappers read their environment from bin/nah.env, because BOINC's cron restarts daemons without it.

@@ -24,6 +24,39 @@ class TestCreateWork(unittest.TestCase):
         self.assertIn("--credit", cmd)
 
 
+class TestMissingDrive(unittest.TestCase):
+    def test_no_record_written_when_the_science_folder_is_gone(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            s = settings()
+            s["storage"]["science_dir"] = str(Path(tmp) / "unplugged" / "nuclear")
+            with self.assertRaises(FileNotFoundError):
+                work_generator.save_record(s, wu(), "params")
+            self.assertFalse((Path(tmp) / "unplugged").exists())
+
+
+class TestScienceDirScript(unittest.TestCase):
+    def run_script(self, tmp, line):
+        import shutil
+        import subprocess
+        (tmp / "config").mkdir(exist_ok=True)
+        (tmp / "server/staging").mkdir(parents=True, exist_ok=True)
+        (tmp / "config/staging.conf").write_text(f"address=auto\nscience_dir={line}\n")
+        script = shutil.copy(work_generator.ROOT / "server/staging/science_dir.sh", tmp / "server/staging")
+        return subprocess.run(["bash", str(script), "/default"], capture_output=True, text=True)
+
+    def test_default_configured_and_missing_drive(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as name:
+            tmp = Path(name)
+            self.assertEqual(self.run_script(tmp, "").stdout.strip(), "/default")
+            drive = tmp / "drive"
+            self.assertEqual(self.run_script(tmp, str(drive)).returncode, 1)  # unplugged
+            (drive / "results").mkdir(parents=True)
+            (drive / "wu").mkdir()
+            self.assertEqual(self.run_script(tmp, str(drive)).stdout.strip(), str(drive))
+
+
 class TestClaimRetry(unittest.TestCase):
     class Cursor:
         def __init__(self, row):
