@@ -36,7 +36,7 @@ def fake_query(sql, args):
     if "count(*) / 7.0" in sql:
         return [(2.0,)]
     if "FROM science_aggregates" in sql:
-        return [("W", "W_EAM_A", 1000.0, 300.0, 4, 2.0, 0.5, 1.1, 2.9, {"1": 3})] if "material_family," in sql else [(1000.0, 300.0, 4)]
+        return [("W", "W_EAM_A", 1000.0, 300.0, 4, 2.0, 0.5, 1.1, 2.9, {"1": 3}, {"n": 4})] if "material_family," in sql else [("W_EAM_A", 1000.0, 300.0, 4)]
     if "SELECT c.snapshot_file" in sql:
         return [("WA-0001-00000001/snap_3", "W", 1000.0, 300.0, 1.4, 2)]
     if "SELECT snapshot_file" in sql:

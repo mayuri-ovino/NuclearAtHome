@@ -28,8 +28,10 @@
   <section id="overview" class="page">
     <h1>Simulating radiation damage in fusion reactor walls</h1>
     <p class="lede">Volunteers lend spare computer time to simulate what happens when a fast neutron knocks a
-      tungsten atom out of place: a collision cascade lasting a few trillionths of a second. Each work unit
-      counts the defects the cascade leaves behind. Thousands of them tell us how wall materials wear out.</p>
+      tungsten atom out of place: a collision cascade lasting a few trillionths of a second. One cascade is
+      routine for any lab. What no single lab can afford is running the same question tens of thousands of
+      times, with several published models of tungsten, to see how much the answers really vary.
+      That is what Nuclear@Home is for.</p>
     <p><a class="watch" href="cascade.html?demo=1">▶ Watch a cascade in 3D</a></p>
     <div class="tiles">
       <div class="tile"><span>Active computers (7 days)</span><b id="o-hosts">–</b></div>
@@ -45,17 +47,40 @@
         <th>Mean Frenkel pairs</th><th>± SE</th><th>95% interval</th></tr></thead>
       <tbody id="o-bins"><tr><td colspan="8">Loading…</td></tr></tbody>
     </table></div>
-    <h2>What this can and cannot tell us</h2>
+    <h2>Rare events</h2>
+    <p class="lede">The spread of outcomes, not just the average: Frenkel pairs at the median, 90th and 99th percentile
+      (shown only once enough cascades lie beyond them, so the 99th needs about a thousand runs), the largest seen so far, how often
+      a cascade leaves an interstitial cluster of at least <span id="o-tails-size">10</span> defects, and how many recoils
+      reached the edge of the box. Brackets are 95% intervals, each for its own cell. They narrow as the sample grows.</p>
+    <div class="scroll"><table>
+      <thead><tr><th>Potential</th><th>PKA energy</th><th>Temp.</th><th>n</th><th>Median</th><th>90th</th><th>99th</th>
+        <th>Largest of n</th><th>Large interstitial cluster</th><th>Reached box edge</th></tr></thead>
+      <tbody id="o-tails"><tr><td colspan="10">Loading…</td></tr></tbody>
+    </table></div>
+    <h2>Why volunteers</h2>
+    <div class="cols">
+      <div class="card"><h2>How sure are the models?</h2>
+        <p>In one study of three tungsten models (at 100–200 keV), the models agreed on how many defects a cascade leaves
+          but disagreed on the shapes those defects take. Campaign 2 will run the same scenarios (energy, temperature, random directions) with each model,
+          so modellers of reactor walls get honest error bars.</p></div>
+      <div class="card"><h2>The rare events</h2>
+        <p>Unusually large defect clusters are rare. A hundred simulations can't say how often they form; tens of
+          thousands are needed to measure it. Volume is exactly what thousands of home computers provide.</p></div>
+      <div class="card"><h2>Open data</h2>
+        <p>Every cascade is checked, run twice on different computers and published with its inputs, so anyone can
+          re-analyse it. Campaign 1 is checking the pipeline against published results first.</p></div>
+    </div>
+    <h2>What this cannot do</h2>
     <div class="cols">
       <div class="card"><h2>A prediction, not a measurement</h2>
         <p>No machine on Earth yet makes fusion neutrons at reactor strength, so these results cannot be checked
           against a real fusion wall. We compare with other published simulations and label every number a model prediction.</p></div>
-      <div class="card"><h2>Pure tungsten first</h2>
-        <p>Real wall materials are alloys. Simulating an alloy needs a trusted model of how its atoms push and pull on
-          each other; we add a material only when such a model has been published and tested.</p></div>
-      <div class="card"><h2>The first moments of damage</h2>
-        <p>Each work unit is one neutron hit in a perfect crystal. Years of damage piling up, or sudden events like
-          plasma disruptions and heat cycles, are beyond what these simulations can follow.</p></div>
+      <div class="card"><h2>Only the first picoseconds</h2>
+        <p>Each work unit follows one neutron hit for about 20 trillionths of a second. Years of damage piling up,
+          heat cycles and the tritium a wall finally holds need other models, which can use our data as input.</p></div>
+      <div class="card"><h2>Small boxes, pure tungsten</h2>
+        <p>Each simulation must fit on one home computer, which limits the hits we can follow to an estimated 20 keV or so (10 keV is the largest run so far). Real walls
+          are alloys that slowly turn partly into rhenium; we add a material only when a tested model of it exists.</p></div>
     </div>
   </section>
 

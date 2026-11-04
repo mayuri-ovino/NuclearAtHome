@@ -33,5 +33,34 @@ class TestJobs(unittest.TestCase):
         self.assertFalse(reliable(10, 10, 50, 0.98))  # too few results to judge
 
 
+class TestScienceAggregates(unittest.TestCase):
+    def test_lists_reach_the_right_tail_statistics(self):
+        import json
+        from stats.jobs import science_aggregates
+        from tests.fixtures.cascade import settings
+
+        class Cursor:
+            def __init__(self):
+                self.inserts = []
+
+            def execute(self, sql, args=None):
+                if sql.lstrip().startswith("INSERT"):
+                    self.inserts.append(args)
+
+            def fetchall(self):  # 3 cascades: vacancy clusters small, interstitial clusters large
+                return [("W", "W_EAM_A", 1000.0, 300.0, [2, 4, 6], ["1,1", "2,1,1", "3,2,1"], ["2", "5,1", "6"],
+                         [False, False, True])]
+
+        cur = Cursor()
+        science_aggregates(cur, settings())
+        (row,) = cur.inserts
+        tails = json.loads(row[-1])
+        self.assertEqual(json.loads(row[-2]), {"1": 5, "2": 2, "3": 1})  # vacancy histogram
+        self.assertEqual(tails["boundary_hits"], 1)
+        by_size = {r["size"]: r["count"] for r in tails["largest_interstitial_cluster_at_least"]}
+        self.assertEqual(by_size, {2: 3, 5: 2})  # interstitial lists, not vacancy ones
+        self.assertEqual({r["size"]: r["count"] for r in tails["largest_vacancy_cluster_at_least"]}, {2: 2, 5: 0})
+
+
 if __name__ == "__main__":
     unittest.main()

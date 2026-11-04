@@ -43,6 +43,20 @@ const pages = {
     fill($("o-bins"), bins.map((b) => [b.material, b.potential_id, keV(b.pka_energy_ev), `${fmt(b.temperature_k, 0)} K`,
       b.n, fmt(b.mean_frenkel), fmt(b.se_frenkel),
       b.ci95_low === null ? "–" : `${fmt(b.ci95_low)} – ${fmt(b.ci95_high)}`]), "No validated cascades yet.");
+    // Rare events (each interval is 95% for its own cell, not across the table).
+    const pct = (v) => `${(100 * v).toFixed(v < 0.01 ? 2 : 1)}%`;
+    const q = (p) => (p ? `${p.value} (${p.ci95[0]}–${p.ci95[1]})` : "–");
+    const rows = bins.filter((b) => b.tails && b.tails.n && b.tails.frenkel);
+    const big = rows.length ? rows[0].tails.largest_interstitial_cluster_at_least.find((r) => r.size === 10)
+      || rows[0].tails.largest_interstitial_cluster_at_least.at(-1) : null;
+    if (big) $("o-tails-size").textContent = big.size;
+    fill($("o-tails"), rows.map((b) => {
+      const t = b.tails, f = t.frenkel;
+      const row = t.largest_interstitial_cluster_at_least.find((r) => r.size === big.size);
+      return [b.potential_id, keV(b.pka_energy_ev), `${fmt(b.temperature_k, 0)} K`, t.n, q(f.p50), q(f.p90), q(f.p99),
+        f.largest_of_n, `${pct(row.fraction)} (${pct(row.ci95[0])} – ${pct(row.ci95[1])})${row.boundary_hits ? `, ${row.boundary_hits} reached edge` : ""}`,
+        `${t.boundary_hits} (${pct(t.boundary_hits / t.n)})`];
+    }), "No validated cascades yet.");
   },
   async workunits() {
     const { workunits } = await getJSON("/api/v1/workunits/recent");
@@ -52,23 +66,25 @@ const pages = {
   async campaigns() {
     const s = await getJSON("/api/v1/project/summary");
     const c = s.campaign;
-    $("c-title").textContent = `${c.id}: ${c.material}, potential ${c.potential_id}`;
+    $("c-title").textContent = `${c.id}: ${c.material}, potential${c.potential_ids.length > 1 ? "s" : ""} ${c.potential_ids.join(", ")}`;
     $("c-desc").textContent = `Cascades at ${c.energies_ev.map(keV).join(" and ")}, ${c.temperatures_k.map((t) => `${t} K`).join(", ")}; `
-      + `${c.target_per_bin} validated runs per energy and temperature.`;
-    const done = new Map(s.campaign_progress.map((p) => [`${p.pka_energy_ev}|${p.temperature_k}`, p.n]));
+      + `${c.target_per_bin} validated runs per scenario (more where rare events are sought).`;
+    const done = new Map(s.campaign_progress.map((p) => [`${p.potential_id}|${p.pka_energy_ev}|${p.temperature_k}`, p.n]));
     const box = $("c-bins");
     box.replaceChildren();
-    for (const e of c.energies_ev) for (const t of c.temperatures_k) {
-      const n = done.get(`${e}|${t}`) || 0;
+    const many = c.potential_ids.length > 1;
+    for (const b of c.bins) {
+      const n = done.get(`${b.potential_id}|${b.pka_energy_ev}|${b.temperature_k}`) || 0;
+      const name = `${many ? `${b.potential_id}, ` : ""}${keV(b.pka_energy_ev)} at ${b.temperature_k} K`;
       const row = document.createElement("div");
       row.className = "bin";
       const label = document.createElement("span");
-      label.textContent = `${keV(e)} at ${t} K`;
+      label.textContent = name;
       const bar = document.createElement("progress");
-      bar.max = c.target_per_bin; bar.value = Math.min(n, c.target_per_bin);
-      bar.setAttribute("aria-label", `${keV(e)} at ${t} K`);
+      bar.max = b.target; bar.value = Math.min(n, b.target);
+      bar.setAttribute("aria-label", name);
       const count = document.createElement("span");
-      count.textContent = `${n} / ${c.target_per_bin}`;
+      count.textContent = `${n} / ${b.target.toLocaleString()}`;
       row.append(label, bar, count);
       box.append(row);
     }

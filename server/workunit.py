@@ -50,11 +50,12 @@ def planned_md_steps(settings: dict) -> int:
 
 
 def make_cascade_wu(settings: dict, *, serial: int, energy_ev: float, temperature_k: float,
-                    direction: tuple[float, float, float], seed: int) -> dict:
-    """Return a schema-valid cascade WU record. Raises TodoValue if any needed setting is TODO."""
+                    direction: tuple[float, float, float], seed: int, potential_id: str | None = None) -> dict:
+    """Return a schema-valid cascade WU record. Raises TodoValue if any needed setting is TODO.
+    potential_id defaults to the campaign's first potential."""
     from stats.ppd import base_points
 
-    potential_id = require(settings, "campaign.potential_id")
+    potential_id = potential_id or require(settings, "campaign.potential_ids")[0]
     potential = require(settings, f"potentials.{potential_id}")
     cells = unit_cells_for(settings, energy_ev)
     n_atoms = ATOMS_PER_CELL[potential["lattice"]] * cells ** 3

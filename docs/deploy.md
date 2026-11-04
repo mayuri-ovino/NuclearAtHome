@@ -36,8 +36,29 @@ NAH_API_PG_DSN="dbname=nuclear" NAH_SCIENCE_DIR=~/nah-science python3 scripts/se
 
 ## 2. Move it to a Raspberry Pi
 
-Any Pi 4 or 5 with 2 GB or more and Raspberry Pi OS (64-bit) works for the website and database.
-The BOINC server itself can join it later.
+### The whole server, BOINC included (one command)
+
+A Pi 4 or 5 with 4 GB or more, Raspberry Pi OS 64-bit (bookworm) and an SSD rather than an SD card:
+results write about 3 MB each. The server uses about 600 MB of memory; checking one result takes
+seconds. The BOINC build takes a while (up to an hour or so on a Pi; not yet timed on one).
+
+```bash
+rsync -a ~/Downloads/nuclear-at-home/ pi:/tmp/nuclear-at-home/    # includes the prebuilt binaries
+ssh pi 'sudo mv /tmp/nuclear-at-home /opt/nuclear-at-home'
+ssh pi 'sudo bash /opt/nuclear-at-home/server/pi/install.sh --test-key'
+ssh pi 'sudo bash /opt/nuclear-at-home/server/pi/autogen.sh on'
+```
+
+BOINC is on port 8888 and the website on port 80, at the address in `config/staging.conf`.
+`--test-key` creates a signing key on the Pi: private home use only. For anything public, generate
+the key and sign offline (`crypt_prog`, `sign_executable`), and put `code_sign_public` and the
+`<file>.sig` files in `client/app_version/signed/` before installing; then no private code-signing
+key exists on the Pi. Tested end to end in a clean Debian bookworm container (x86_64), not yet on a
+real Pi.
+
+### Only the website and database
+
+Any Pi 4 or 5 with 2 GB or more and Raspberry Pi OS (64-bit) works for this:
 
 1. Install the packages on the Pi:
    ```bash

@@ -12,11 +12,12 @@ number = 1                                # 4-digit campaign number inside wu_id
 wu_prefix = "WA"                          # two capital letters (workunit_schema.json wu_id pattern)
 material_family = "W"
 composition = { W = 1.0 }
-potential_id = "W_EAM_A"
+potential_ids = ["W_EAM_A"]
 pka_element = "W"
 energies_ev = [1000.0, 2000.0]
 temperatures_k = [300.0]
 target_per_bin = 3
+max_attempts = 3
 canary_fraction = 0.0
 size_tiers = [[200, "small"], [5000000, "large"]]
 max_in_flight = 10
@@ -52,9 +53,12 @@ max_time_ps = 10.0
 channeling_exclusion_deg = 5.0
 
 [analysis]
-vacancy_cluster_cutoff_angstrom = 2.9
-interstitial_cluster_cutoff_angstrom = 2.9
+vacancy_cluster_shell = 4
+interstitial_cluster_shell = 3
+cluster_cutoff_tolerance = 0.001
 bootstrap_samples = 200
+tail_cluster_sizes = [2, 5]
+tail_min_beyond = 10
 
 [validator]
 min_md_steps = 100

@@ -88,22 +88,25 @@ def save_record(settings: dict, wu: dict, params: str) -> Path:
     return params_path
 
 
-def bin_counts(cur) -> dict[tuple[float, float], int]:
-    """Non-canary WUs per bin that are in flight or validated (failed ones are re-generated)."""
-    cur.execute("""SELECT w.energy_ev, w.temperature_k, count(*) FROM workunits w
+def bin_counts(cur) -> dict[sampler.Bin, int]:
+    """Non-canary WUs per (potential, energy, temperature) bin that are in flight or validated
+    (failed ones are re-generated)."""
+    cur.execute("""SELECT w.potential_id, w.energy_ev, w.temperature_k, count(*) FROM workunits w
                    LEFT JOIN wu_results r ON r.wu_id = w.wu_name
                    WHERE w.wu_name NOT IN (SELECT wu_name FROM canaries)
                      AND (w.status IN ('pending', 'in_flight') OR r.validated)
-                   GROUP BY 1, 2""")
-    return {(e, t): n for e, t, n in cur.fetchall()}
+                   GROUP BY 1, 2, 3""")
+    return {(p, e, t): n for p, e, t, n in cur.fetchall()}
 
 
-def claim_canary(cur, energy: float, temperature: float, exclusion: float) -> tuple[int, dict] | None:
+def claim_canary(cur, potential_id: str, energy: float, temperature: float,
+                 exclusion: float) -> tuple[int, dict] | None:
     """An unused reference run for this open bin, or None. Rows that a normal WU could not
     have produced (channeling direction, off-grid values) are skipped, never issued."""
     cur.execute("""SELECT pool_id, wu_record FROM canary_pool WHERE used_by_wu_name IS NULL
+                     AND wu_record->'material'->>'potential_id' = %s
                      AND (wu_record->'pka'->>'energy_ev')::float8 = %s AND (wu_record->>'temperature_k')::float8 = %s
-                   ORDER BY random() LIMIT 5 FOR UPDATE SKIP LOCKED""", (energy, temperature))
+                   ORDER BY random() LIMIT 5 FOR UPDATE SKIP LOCKED""", (potential_id, energy, temperature))
     for pool_id, record in cur.fetchall():
         direction = tuple(float(c) for c in record["pka"]["direction"])
         seed = int(record["random_seed"])
@@ -112,20 +115,54 @@ def claim_canary(cur, energy: float, temperature: float, exclusion: float) -> tu
     return None
 
 
-def create_one(settings: dict, project_dir: Path, shared: list[str], energy: float, temperature: float,
-               canary_fraction: float, exclusion: float) -> None:
-    """Commit one WU's row and record, then register it with BOINC."""
+def claim_retry(cur, settings: dict, potential_id: str, energy: float,
+                temperature: float) -> tuple[str, int, dict] | None:
+    """The oldest failed non-canary WU of this bin still to be retried: (name, attempt, its PKA
+    direction and seed). Re-running the same impact, rather than drawing a new one, keeps hard
+    cascades (long, large) from silently dropping out of the sample and thinning the tail.
+    After max_attempts the impact counts as permanently failed (queryable, so the remaining
+    bias can be bounded)."""
+    max_attempts = require(settings, "campaign.max_attempts")
+    cur.execute("""SELECT wu_name, attempt FROM workunits
+                   WHERE potential_id = %s AND energy_ev = %s AND temperature_k = %s AND status = 'failed'
+                     AND NOT retried AND attempt < %s AND wu_name NOT IN (SELECT wu_name FROM canaries)
+                   ORDER BY created_at LIMIT 1 FOR UPDATE SKIP LOCKED""",
+                (potential_id, energy, temperature, max_attempts))
+    row = cur.fetchone()
+    if row is None:
+        return None
+    name, attempt = row
+    cur.execute("UPDATE workunits SET retried = true WHERE wu_name = %s", (name,))
+    record_path = Path(require(settings, "storage.science_dir")) / "wu" / f"{name}.json"
+    try:
+        record = json.loads(record_path.read_text())
+    except (OSError, ValueError):
+        return None  # no record to repeat (marked retried, so it is not tried again); a new draw follows
+    return name, attempt, {"direction": tuple(record["pka"]["direction"]), "seed": int(record["random_seed"])}
+
+
+def create_one(settings: dict, project_dir: Path, shared: list[str], potential_id: str, energy: float,
+               temperature: float, canary_fraction: float, exclusion: float) -> None:
+    """Commit one WU's row and record, then register it with BOINC. A failed WU of the bin is
+    retried with the same impact first; otherwise a canary (sometimes) or a new random draw."""
     with db.pg() as conn:
         with conn.cursor() as cur:
-            canary = claim_canary(cur, energy, temperature, exclusion) if _rng.random() < canary_fraction else None
-            params = canary[1] if canary else {"direction": sampler.sample_direction(_rng, exclusion),
-                                               "seed": sampler.sample_seed(_rng)}
+            retry = claim_retry(cur, settings, potential_id, energy, temperature)
+            canary = (claim_canary(cur, potential_id, energy, temperature, exclusion)
+                      if retry is None and _rng.random() < canary_fraction else None)
+            if retry:
+                params = retry[2]
+            else:
+                params = canary[1] if canary else {"direction": sampler.sample_direction(_rng, exclusion),
+                                                   "seed": sampler.sample_seed(_rng)}
             cur.execute("SELECT nextval('wu_serial')")
             wu = make_cascade_wu(settings, serial=cur.fetchone()[0], energy_ev=float(energy),
-                                 temperature_k=float(temperature), **params)
+                                 temperature_k=float(temperature), potential_id=potential_id, **params)
             params_path = save_record(settings, wu, render_params(settings, wu))
-            cur.execute("INSERT INTO workunits (wu_name, energy_ev, temperature_k, points_base) VALUES (%s, %s, %s, %s)",
-                        (wu["wu_id"], wu["pka"]["energy_ev"], wu["temperature_k"], wu["points"]))
+            cur.execute("INSERT INTO workunits (wu_name, potential_id, energy_ev, temperature_k, points_base, attempt, "
+                        "retry_of, inputs) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+                        (wu["wu_id"], potential_id, wu["pka"]["energy_ev"], wu["temperature_k"], wu["points"],
+                         retry[1] + 1 if retry else 1, retry[0] if retry else None, shared))
             if canary:
                 cur.execute("INSERT INTO canaries (wu_name, pool_id) VALUES (%s, %s)", (wu["wu_id"], canary[0]))
                 cur.execute("UPDATE canary_pool SET used_by_wu_name = %s WHERE pool_id = %s", (wu["wu_id"], canary[0]))
@@ -145,13 +182,15 @@ def create_one(settings: dict, project_dir: Path, shared: list[str], energy: flo
 def generate(settings: dict) -> int:
     """Fill the in-flight queue. Returns the number of WUs created."""
     project_dir = Path(require(settings, "boinc.project_dir"))
-    energies = require(settings, "campaign.energies_ev")
-    temperatures = require(settings, "campaign.temperatures_k")
-    target = require(settings, "campaign.target_per_bin")
+    targets = sampler.campaign_bins(require(settings, "campaign.potential_ids"),
+                                    require(settings, "campaign.energies_ev"),
+                                    require(settings, "campaign.temperatures_k"),
+                                    require(settings, "campaign.target_per_bin"),
+                                    settings["campaign"].get("bin_targets", []))
     max_in_flight = require(settings, "campaign.max_in_flight")
     canary_fraction = require(settings, "campaign.canary_fraction")
     exclusion = require(settings, "simulation.channeling_exclusion_deg")
-    shared = shared_inputs(settings, project_dir, require(settings, "campaign.potential_id"))
+    shared: dict[str, list[str]] = {}  # potential_id -> staged shared files, staged on first use
     with db.pg() as conn, conn.cursor() as cur:
         # A row still pending after 30 minutes belongs to a run that died before create_work finished.
         cur.execute("UPDATE workunits SET status = 'failed' WHERE status = 'pending' "
@@ -161,10 +200,13 @@ def generate(settings: dict) -> int:
     created = 0
     while created < room:
         with db.pg() as conn, conn.cursor() as cur:
-            chosen = sampler.pick_bin(bin_counts(cur), energies, temperatures, target)
+            chosen = sampler.pick_bin(bin_counts(cur), targets)
         if chosen is None:
             break
-        create_one(settings, project_dir, shared, *chosen, canary_fraction, exclusion)
+        potential_id = chosen[0]
+        if potential_id not in shared:
+            shared[potential_id] = shared_inputs(settings, project_dir, potential_id)
+        create_one(settings, project_dir, shared[potential_id], *chosen, canary_fraction, exclusion)
         created += 1
     return created
 

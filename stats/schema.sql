@@ -5,10 +5,16 @@ CREATE SEQUENCE wu_serial;  -- WU name serials; never reused
 
 CREATE TABLE workunits (
     wu_name             text PRIMARY KEY,
+    potential_id        text NOT NULL,
     energy_ev           double precision NOT NULL,
     temperature_k       double precision NOT NULL,
     points_base         double precision NOT NULL,
     status              text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'in_flight', 'done', 'failed')),
+    attempt             integer NOT NULL DEFAULT 1,      -- a failed WU's impact is retried (work_generator.claim_retry)
+    retry_of            text,                            -- the failed WU this one repeats
+    retried             boolean NOT NULL DEFAULT false,  -- a retry of this WU has been created
+    inputs              text[],                          -- staged shared inputs, content-addressed (template, potential,
+                                                         -- stopping): which versions produced the result; NULL before 2026-11-03
     created_at          timestamptz NOT NULL DEFAULT now()
 );
 
@@ -66,6 +72,7 @@ CREATE TABLE science_aggregates (
     material_family text, potential_id text, pka_energy_ev double precision, temperature_k double precision,
     n integer NOT NULL, mean_frenkel double precision, se_frenkel double precision,
     ci95_low double precision, ci95_high double precision, cluster_size_hist jsonb,
+    tails jsonb,                    -- rare-event statistics (analysis/aggregate.py tails)
     updated_at timestamptz NOT NULL DEFAULT now(),
     PRIMARY KEY (material_family, potential_id, pka_energy_ev, temperature_k)
 );

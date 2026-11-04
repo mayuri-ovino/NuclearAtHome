@@ -15,12 +15,35 @@ LOW_INDEX = sorted({
 })
 
 
-def pick_bin(counts: dict[tuple[float, float], int], energies: list[float],
-             temperatures: list[float], target: int) -> tuple[float, float] | None:
-    """The (energy, temperature) bin with the fewest WUs, or None when all reach target."""
-    open_bins = [(counts.get((e, t), 0), i, (e, t))
-                 for i, (e, t) in enumerate(itertools.product(energies, temperatures))
-                 if counts.get((e, t), 0) < target]
+Bin = tuple[str, float, float]  # (potential_id, PKA energy eV, temperature K)
+
+
+def campaign_bins(potentials: list[str], energies: list[float], temperatures: list[float],
+                  default_target: int, bin_targets: list[dict]) -> dict[Bin, int]:
+    """Every (potential, energy, temperature) bin with its target: the campaign default, or a
+    larger per-bin target (Campaign 3, distribution tails) for the listed bins."""
+    if default_target <= 0:
+        raise ValueError("target_per_bin must be positive")
+    targets = {bin_: default_target for bin_ in itertools.product(potentials, energies, temperatures)}
+    seen = set()
+    for extra in bin_targets:
+        bin_ = (extra["potential_id"], float(extra["energy_ev"]), float(extra["temperature_k"]))
+        if bin_ not in targets:
+            raise ValueError(f"bin_targets entry {bin_} is not a campaign bin")
+        if bin_ in seen:
+            raise ValueError(f"bin_targets lists {bin_} twice")
+        if int(extra["target"]) < default_target:
+            raise ValueError(f"bin_targets may only raise a target: {bin_}")
+        seen.add(bin_)
+        targets[bin_] = int(extra["target"])
+    return targets
+
+
+def pick_bin(counts: dict[Bin, int], targets: dict[Bin, int]) -> Bin | None:
+    """The open bin furthest from its target (fewest WUs relative to target), or None when all
+    are full. Relative, so a 10,000-run tail bin does not starve the 100-run bins."""
+    open_bins = [(counts.get(bin_, 0) / target, i, bin_)
+                 for i, (bin_, target) in enumerate(targets.items()) if counts.get(bin_, 0) < target]
     return min(open_bins)[2] if open_bins else None
 
 

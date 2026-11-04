@@ -13,6 +13,27 @@ BASIS = {"bcc": [(0, 0, 0), (0.5, 0.5, 0.5)],
          "fcc": [(0, 0, 0), (0.5, 0.5, 0), (0.5, 0, 0.5), (0, 0.5, 0.5)]}
 
 
+# Neighbour-shell distances in units of a0 (1NN ... 5NN).
+SHELLS = {"bcc": [3 ** 0.5 / 2, 1.0, 2 ** 0.5, 11 ** 0.5 / 2, 3 ** 0.5]}
+
+
+def cluster_cutoff(lattice: str, a0: float, shell: int, tolerance: float) -> float:
+    """Clustering cutoff for "within the n-th neighbour shell" at this lattice constant.
+
+    The relative tolerance makes defects exactly at the shell distance join (vacancies sit on
+    exact reference sites) and must stay below the gap to the next shell.
+    """
+    shells = SHELLS[lattice]
+    if not 1 <= shell <= len(shells):
+        raise ValueError(f"no neighbour shell {shell} for {lattice}")
+    if tolerance <= 0:
+        raise ValueError("tolerance must be positive, or exact-shell pairs may not join")
+    cutoff = a0 * shells[shell - 1] * (1 + tolerance)
+    if shell < len(shells) and cutoff >= a0 * shells[shell]:
+        raise ValueError(f"tolerance {tolerance} reaches the next neighbour shell")
+    return cutoff
+
+
 def lattice_sites(lattice: str, cells: int, a0: float) -> np.ndarray:
     """Perfect-lattice site positions for a cubic box of cells^3 unit cells."""
     grid = np.stack(np.meshgrid(*[np.arange(cells)] * 3, indexing="ij"), axis=-1).reshape(-1, 3)

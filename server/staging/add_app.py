@@ -12,6 +12,8 @@ DAEMONS = [
     "script_validator -d 3 --app " + APP + " --credit_from_wu "
     "--init_script \"nah_validate_init result_id runtime files\" --compare_script \"nah_validate_compare\"",
     "script_assimilator -d 3 --app " + APP + " --script \"nah_assimilate wu_id files\"",
+    # Job size matching: results start inactive, this activates enough of each size class to keep sending.
+    "size_regulator --app_name " + APP + " --lo 20 --hi 50 --sleep_time 60",
 ]
 # Tasks in progress per computer: per CPU thread, and per GPU. Keeps one big machine from taking the
 # whole queue (a 32-thread PC took 34 of 40 tasks) while keeping it busy.

@@ -1,10 +1,13 @@
 # Nuclear@Home — project rules
 
 Nuclear@Home is a BOINC volunteer computing project. Volunteers run molecular
-dynamics (LAMMPS) simulations of collision cascades in fusion materials, then
-insert hydrogen/tritium into the damaged material to measure trapping. The server
-turns millions of results into an open database and an estimate of tritium
-retained in fusion reactor walls.
+dynamics (LAMMPS) simulations of collision cascades in fusion materials (tungsten
+first). Its focus is what volunteer computing can do and a cluster cannot easily
+afford: very large ensembles of independent cascades that measure how much primary
+damage varies, and how much it depends on the interatomic potential, with honest
+uncertainty, published as an open dataset. A later stage inserts hydrogen/tritium
+into the damaged material to measure trapping. What it can and cannot do, and the
+campaign order: `docs/scope.md`. It does not compute a reactor's tritium inventory.
 
 Every agent working in this repository (main session and subagents) follows these rules.
 

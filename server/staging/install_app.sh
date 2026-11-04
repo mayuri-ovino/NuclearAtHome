@@ -6,7 +6,7 @@ set -euo pipefail
 src=/opt/nuclear-at-home
 # Like the official makeproject-step2.sh: make $PROJECT_ROOT the shared volume, or BOINC's tools
 # write download/ files into this throwaway container instead of the project.
-rm -rf "$PROJECT_ROOT" && ln -s "$PROJECT_ROOT.dst" "$PROJECT_ROOT"
+if [ -d "$PROJECT_ROOT.dst" ]; then rm -rf "$PROJECT_ROOT" && ln -s "$PROJECT_ROOT.dst" "$PROJECT_ROOT"; fi  # not on a native (Pi) install
 cd "$PROJECT_ROOT"
 # App versions. 1.03: stripped Linux builds and gzipped downloads; 1.04 (GPU): NVIDIA device chosen
 # explicitly, not Intel's integrated GPU. Earlier versions stay in the database for tasks already
@@ -17,6 +17,8 @@ install_version() {  # <app version> <dir> <version.xml> <job.xml> <job physical
   for f in "$@"; do [ -f "$a/$f" ] || return 0; done
   mkdir -p "$dir" && for f in "$@"; do cp "$a/$f" "$dir/"; done
   cp "$a/$version" "$dir/version.xml" && cp "$src/client/$job" "$dir/$job_name"
+  # Offline signatures, if provided (update_versions then needs no private key): <physical name>.sig
+  for f in "$@" "$job_name"; do if [ -f "$a/signed/$f.sig" ]; then cp "$a/signed/$f.sig" "$dir/"; fi; done
 }
 # CPU: bash client/build_lammps.sh <dir>; GPU (OpenCL, core 0xa2): ... <dir> gpu; Windows: build_lammps_windows.sh
 install_version 1.03 x86_64-pc-linux-gnu version.xml job.xml job_nah_cascade_1.xml \
@@ -27,6 +29,8 @@ install_version 1.03 windows_x86_64 version_windows.xml job.xml job_nah_cascade_
   wrapper_26019_windows_x86_64.exe lmp_nah_stable_29Aug2024_windows.exe
 install_version 1.04 windows_x86_64__opencl_nvidia_101 version_windows_opencl.xml job_opencl.xml job_nah_cascade_opencl_4.xml \
   wrapper_26019_windows_x86_64.exe lmp_nah_stable_29Aug2024_windows_opencl.exe
+# BOINC's default sends each new volunteer's email and IP to stopforumspam.com: not in our privacy policy.
+sed -i 's/define("USE_STOPFORUMSPAM", *true)/define("USE_STOPFORUMSPAM", false)/' html/project/project.inc
 cp "$src/server/boinc/nah_cascade_in" "$src/server/boinc/nah_cascade_out" templates/
 cp "$src/server/boinc/bin/"nah_* bin/
 python3 "$src/server/staging/add_app.py" .

@@ -5,6 +5,7 @@ import json
 import resource
 from pathlib import Path
 
+from analysis.defects import cluster_cutoff
 from analysis.lammps_output import OUTPUT_FILES, build_cascade_record, params_digest
 from server.settings import require
 from server.workunit import parse_params
@@ -40,10 +41,18 @@ def stored_digest(params: dict[str, str]) -> str:
 
 def record_for(settings: dict, paths: list[str], runtime_s: float, wu: dict, params: dict[str, str]) -> dict:
     """Parse one result's uploads into a result record. Raises on any malformed upload."""
-    return build_cascade_record(
-        files_by_name(paths), wu=wu, a0=float(params["a0"]), app_version="1", elapsed_s=runtime_s,
-        vacancy_cutoff=require(settings, "analysis.vacancy_cluster_cutoff_angstrom"),
-        interstitial_cutoff=require(settings, "analysis.interstitial_cluster_cutoff_angstrom"))
+    a0 = float(params["a0"])
+    vacancy_cutoff, interstitial_cutoff = cluster_cutoffs(settings, wu["box"]["lattice"], a0)
+    return build_cascade_record(files_by_name(paths), wu=wu, a0=a0, app_version="1", elapsed_s=runtime_s,
+                                vacancy_cutoff=vacancy_cutoff, interstitial_cutoff=interstitial_cutoff)
+
+
+def cluster_cutoffs(settings: dict, lattice: str, a0: float) -> tuple[float, float]:
+    """Vacancy and interstitial clustering cutoffs (Angstrom) for one WU's lattice and a0(T).
+    Shared by validation and scripts/reanalyse_clusters.py, so the two cannot drift apart."""
+    tolerance = require(settings, "analysis.cluster_cutoff_tolerance")
+    return (cluster_cutoff(lattice, a0, require(settings, "analysis.vacancy_cluster_shell"), tolerance),
+            cluster_cutoff(lattice, a0, require(settings, "analysis.interstitial_cluster_shell"), tolerance))
 
 
 def wu_name_for_result(result_id: int) -> str:

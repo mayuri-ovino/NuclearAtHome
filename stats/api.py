@@ -19,9 +19,14 @@ def _campaign() -> dict:
     """Public campaign facts from config/settings.toml (no secrets live there)."""
     from server.settings import load
     c = load()["campaign"]
-    return {"id": c["id"], "material": c["material_family"], "potential_id": c["potential_id"],
+    from server.sampler import campaign_bins
+    targets = campaign_bins(c["potential_ids"], c["energies_ev"], c["temperatures_k"], c["target_per_bin"],
+                            c.get("bin_targets", []))
+    return {"id": c["id"], "material": c["material_family"], "potential_ids": c["potential_ids"],
             "energies_ev": c["energies_ev"], "temperatures_k": c["temperatures_k"],
-            "target_per_bin": c["target_per_bin"]}
+            "target_per_bin": c["target_per_bin"],
+            "bins": [{"potential_id": p, "pka_energy_ev": e, "temperature_k": t, "target": n}
+                     for (p, e, t), n in targets.items()]}
 
 
 CAMPAIGN = _campaign()
@@ -108,10 +113,11 @@ def summary(query: Query, _ident, qs) -> dict:
     (active,), = query("SELECT count(DISTINCT host_id) FROM wu_results WHERE reported_at > now() - interval '7 days'", ())
     (per_day,), = query("SELECT count(*) / 7.0 FROM wu_results WHERE reported_at > now() - interval '7 days'", ())
     (total_wus, total_points), = query("SELECT count(*), coalesce(sum(points_awarded), 0) FROM wu_results", ())
-    bins = query("SELECT pka_energy_ev, temperature_k, n FROM science_aggregates ORDER BY 1, 2", ())
+    bins = query("SELECT potential_id, pka_energy_ev, temperature_k, n FROM science_aggregates ORDER BY 1, 2, 3", ())
     return {"active_hosts_7d": active, "wus_per_day": float(per_day), "total_wus": total_wus,
             "total_points": float(total_points), "campaign": CAMPAIGN, "boinc_url": BOINC_URL,
-            "campaign_progress": [{"pka_energy_ev": e, "temperature_k": t, "n": n} for e, t, n in bins]}
+            "campaign_progress": [{"potential_id": p, "pka_energy_ev": e, "temperature_k": t, "n": n}
+                                  for p, e, t, n in bins]}
 
 
 def recent(query: Query, _ident, qs) -> dict:
@@ -127,7 +133,7 @@ def recent(query: Query, _ident, qs) -> dict:
 def cascades(query: Query, _ident, qs) -> dict:
     """Defect statistics per bin; energy_bin and temp_bin are [min,max) pairs like '1000,5000'."""
     sql = """SELECT material_family, potential_id, pka_energy_ev, temperature_k, n, mean_frenkel, se_frenkel,
-                    ci95_low, ci95_high, cluster_size_hist FROM science_aggregates WHERE true"""
+                    ci95_low, ci95_high, cluster_size_hist, tails FROM science_aggregates WHERE true"""
     args: list = []
     if "material" in qs:
         sql += " AND material_family = %s"
@@ -138,7 +144,7 @@ def cascades(query: Query, _ident, qs) -> dict:
             sql += f" AND {column} >= %s AND {column} < %s"
             args += [low, high]
     keys = ["material", "potential_id", "pka_energy_ev", "temperature_k", "n", "mean_frenkel", "se_frenkel",
-            "ci95_low", "ci95_high", "cluster_size_hist"]
+            "ci95_low", "ci95_high", "cluster_size_hist", "tails"]
     return {"bins": [dict(zip(keys, row)) for row in query(sql + " ORDER BY 1, 2, 3, 4", tuple(args))]}
 
 

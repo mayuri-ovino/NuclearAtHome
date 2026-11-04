@@ -1,6 +1,19 @@
 # Nuclear@Home — to-do list (highest priority first)
 
-Updated 2026-11-01. "You" = the human; "agent" = Claude Code.
+Updated 2026-11-02. "You" = the human; "agent" = Claude Code.
+
+**Campaign 3 gates (physics review 2026-11-03), before any tail result is published:**
+- Store each failed result's reason (check ID) in PostgreSQL; define "permanently failed" by the retry chain; publish n_drawn, n_lost and n_in_flight per bin with worst-case tail intervals.
+- Run a 10 keV WU with a forced restart through the stock wrapper and the real validator (the calibration's log was overwritten by its harness, so V1–V8 never ran on it).
+- Before marking a stale pending row failed, check BOINC has no such WU (else a retry duplicates a live impact); dedupe aggregates on (potential, E, T, direction, seed).
+- Do not count WUs that never reached BOINC as attempts; test `create_one` (retry precedence, attempt, retry_of, inputs) against PostgreSQL.
+- Record app version / plan class per result for the pooling rule; scale fpops_est and memory by atoms × steps for boxes above 10 keV.
+
+**Direction (2026-11-02):** the project focuses on what volunteers do better than a cluster:
+large ensembles and potential comparisons (`docs/scope.md`). Campaign order there:
+1 validation (running) → 2 potential uncertainty → 3 distribution tails → 4 higher energies
+→ 5 trapping. The most valuable next step is not code: find a fusion-materials researcher
+(item 13) and agree Campaign 2's potentials and outputs with them.
 
 ## 1. Blocks every real cascade run
 
@@ -14,7 +27,7 @@ Nothing left. The SRIM stopping table, the exact Juslin–Wirth potential and th
 ## 3. Needed for good science (not blocking the alpha)
 
 6. **You: digitize Warrier & Bhardwaj Fig. 2** to replace the sanity-only V7 ranges (#6).
-7. **Calibration:** 5 keV done (5,800 s on one core, 314 MB, 9 Frenkel pairs; passes V1–V8). Still to do: the 10 keV large-tier run (about 3.4× the atoms, roughly 5–6 h), and replacing the assumed 5e9 FLOPS/core with a BOINC benchmark.
+7. **Calibration:** 5 keV done (5,800 s on one core, 314 MB, 9 Frenkel pairs; passes V1–V8). 10 keV done (≈24,000 s on one shared core, 1.03 GB, 6 Frenkel pairs, V4 5.5e-3; full validator not run because the calibration's log was overwritten on resume). Still to do: replace the assumed 5e9 FLOPS/core with a BOINC benchmark. Credit note (unconfirmed, contention-confounded: one run each, 10 keV on a core shared with BOINC and extrapolated from its last segment): 10 keV is worth 3.375× a 5 keV WU and may take somewhat longer than that ratio. Measure both energies on a quiet core before deciding whether to adjust credit.
 8. **Physics:** a new temperature needs its own measured a0 (the template has no NPT step).
 9. **Agent: Phase 2.** Freeze the interfaces from these decisions; you run the 2-step freeze from the README.
 

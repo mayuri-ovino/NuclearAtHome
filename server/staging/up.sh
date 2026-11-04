@@ -7,9 +7,9 @@
 set -euo pipefail
 repo="$(cd "$(dirname "$0")/../.." && pwd)"
 upstream="${1:-$HOME/nah-staging/boinc-server-docker}"
-# Address volunteers reach staging at: 127.0.0.1 (this computer only) or this computer's LAN address
-# (other PCs on your home network). Never a public address: staging uses a test signing key.
-host="${STAGING_HOST:-127.0.0.1}"
+# Address volunteers reach staging at: config/staging.conf ("auto" = this computer's current
+# home-network address), overridden by STAGING_HOST. Never public: staging uses a test signing key.
+host="${STAGING_HOST:-$(bash "$repo/server/staging/address.sh")}"
 # Science files (WU records, results, 3D snapshots) in a normal folder, so the local website
 # (server.sh) can serve them; inside the container it is /srv/nuclear/science, owned by uid 1000.
 science="${STAGING_SCIENCE:-$HOME/nah-staging/science}"
@@ -87,4 +87,13 @@ for _ in $(seq 30); do docker compose exec -T postgres pg_isready -U postgres -q
 if ! docker compose exec -T postgres psql -U postgres -d nuclear -tAc "select 1 from pg_tables where tablename='wu_results'" | grep -q 1; then
   docker compose exec -T postgres psql -q -U postgres -d nuclear -v ON_ERROR_STOP=1 < "$repo/stats/schema.sql"
 fi
+# Schema additions for databases created before them (idempotent).
+docker compose exec -T postgres psql -q -U postgres -d nuclear -v ON_ERROR_STOP=1 -c \
+  "ALTER TABLE workunits ADD COLUMN IF NOT EXISTS potential_id text NOT NULL DEFAULT 'W_EAM_A';
+   ALTER TABLE workunits ALTER COLUMN potential_id DROP DEFAULT;
+   ALTER TABLE science_aggregates ADD COLUMN IF NOT EXISTS tails jsonb;
+   ALTER TABLE workunits ADD COLUMN IF NOT EXISTS attempt integer NOT NULL DEFAULT 1;
+   ALTER TABLE workunits ADD COLUMN IF NOT EXISTS retry_of text;
+   ALTER TABLE workunits ADD COLUMN IF NOT EXISTS retried boolean NOT NULL DEFAULT false;
+   ALTER TABLE workunits ADD COLUMN IF NOT EXISTS inputs text[];"  # every WU before Campaign 2 used W_EAM_A
 echo "Staging BOINC server: http://$host:8888/nuclear  (PostgreSQL on 127.0.0.1:5433)"

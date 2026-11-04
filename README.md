@@ -1,8 +1,11 @@
 # Nuclear@Home — Claude Code environment
 
 A ready-made Claude Code project for building **Nuclear@Home**, a BOINC volunteer
-computing project that simulates radiation damage in fusion materials and estimates
-how much tritium gets trapped in reactor walls.
+computing project that simulates radiation damage in fusion materials. It runs what a
+single cluster cannot easily afford: tens of thousands of independent tungsten cascades
+per scenario, repeated with several interatomic potentials, to measure how much primary
+damage varies and how much it depends on the model. What it can and cannot do:
+[docs/scope.md](docs/scope.md).
 
 This folder contains the project rules, the main agent's brief, 11 specialist
 subagents, draft interface specs, a task-card system, safety hooks, and a reference

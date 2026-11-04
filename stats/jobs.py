@@ -15,7 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from analysis.aggregate import summarize  # noqa: E402
+from analysis.aggregate import summarize, tails  # noqa: E402
 from server import db  # noqa: E402
 from server.settings import TodoValue, load, require  # noqa: E402
 from stats import ppd  # noqa: E402
@@ -150,25 +150,34 @@ def reliable(judged: int, valid: int, last_n: int, min_rate: float) -> bool:
 def science_aggregates(cur, settings: dict) -> None:
     """Frenkel-pair statistics per bin, from validated non-canary results (outliers are physics, so they count)."""
     samples = require(settings, "analysis.bootstrap_samples")
+    thresholds = require(settings, "analysis.tail_cluster_sizes")
     cur.execute("""SELECT r.material_family, r.potential_id, r.pka_energy_ev, r.temperature_k,
-                          array_agg(c.n_vacancies), array_agg(array_to_string(c.cluster_sizes_vac, ','))
+                          array_agg(c.n_vacancies ORDER BY r.wu_id),
+                          array_agg(array_to_string(c.cluster_sizes_vac, ',') ORDER BY r.wu_id),
+                          array_agg(array_to_string(c.cluster_sizes_int, ',') ORDER BY r.wu_id),
+                          array_agg(c.boundary_hit ORDER BY r.wu_id)
                    FROM wu_results r JOIN cascade_stats c USING (wu_id)
                    WHERE r.validated AND r.wu_id NOT IN (SELECT wu_name FROM canaries)
                    GROUP BY 1, 2, 3, 4""")
-    for material, potential, energy, temperature, counts, cluster_lists in cur.fetchall():
+    for material, potential, energy, temperature, counts, cluster_lists, int_lists, boundary in cur.fetchall():
         s = summarize(counts, samples)
         hist: dict[str, int] = {}
         for sizes in cluster_lists:
             for size in filter(None, sizes.split(",")):
                 hist[size] = hist.get(size, 0) + 1
         ci = s["ci95"] or [None, None]
-        cur.execute("""INSERT INTO science_aggregates VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb, now())
+        parse = lambda rows: [[int(s) for s in filter(None, r.split(","))] for r in rows]  # noqa: E731
+        rare = tails(counts, parse(int_lists), parse(cluster_lists), boundary, thresholds,
+                     require(settings, "analysis.tail_min_beyond"), samples)
+        cur.execute("""INSERT INTO science_aggregates (material_family, potential_id, pka_energy_ev, temperature_k, n,
+                         mean_frenkel, se_frenkel, ci95_low, ci95_high, cluster_size_hist, tails, updated_at)
+                       VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb,%s::jsonb, now())
                        ON CONFLICT (material_family, potential_id, pka_energy_ev, temperature_k) DO UPDATE SET
                          n = EXCLUDED.n, mean_frenkel = EXCLUDED.mean_frenkel, se_frenkel = EXCLUDED.se_frenkel,
                          ci95_low = EXCLUDED.ci95_low, ci95_high = EXCLUDED.ci95_high,
-                         cluster_size_hist = EXCLUDED.cluster_size_hist, updated_at = now()""",
+                         cluster_size_hist = EXCLUDED.cluster_size_hist, tails = EXCLUDED.tails, updated_at = now()""",
                     (material, potential, energy, temperature, s["n"], s["mean"], s["se"], ci[0], ci[1],
-                     json.dumps(hist)))
+                     json.dumps(hist), json.dumps(rare)))
 
 
 def sync_privacy(cur) -> None:

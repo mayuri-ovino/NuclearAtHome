@@ -83,7 +83,16 @@ if "$(count(pka)) != 1" then "print 'ERROR: PKA site does not hold exactly one a
 velocity        all create ${temp} ${seed} dist gaussian mom yes rot yes
 fix             eq all langevin ${temp} ${temp} ${tdamp} ${seed}
 timestep        ${dt_max}
-run             ${equil_steps}
+# Progress counts MD steps (the work), not simulated time: the warm-up is about a quarter of the
+# steps and the first cascade femtoseconds take many tiny steps, so time-based progress made BOINC
+# extrapolate days for 1-2 hour tasks. cascade_min = cascade steps at the largest timestep.
+variable        cascade_min equal ceil(${max_time}/${dt_max})
+run             0
+# Warm-up in chunks only to report progress; "pre no" continues the same dynamics exactly.
+label           equil
+run             $(ternary(v_equil_steps-step<v_check_steps,v_equil_steps-step,v_check_steps)) pre no post no
+print           "$(step/(v_equil_steps+v_cascade_min))" file progress.txt screen no
+if "$(step) < ${equil_steps}" then "jump SELF equil"
 unfix           eq
 velocity        fixed set 0.0 0.0 0.0
 reset_timestep  0 time 0.0
@@ -120,7 +129,9 @@ timestep        ${ck_dt}
 # LAMMPS resets both at the start of every run, so totals are carried across the chunks.
 variable        thermo_rm equal ${off_thermo}
 variable        elec_loss equal ${off_elec}
-variable        frac equal ternary(time<${max_time},time/${max_time},1.0)
+variable        cascade_min equal ceil(${max_time}/${dt_max})
+# Steps done over steps done plus the fewest still needed (at the largest timestep): rises steadily to 1.
+variable        frac equal ternary(time<${max_time},(${equil_steps}+step)/(${equil_steps}+step+(${max_time}-time)/${dt_max}),1.0)
 # Highest kinetic energy outside the free core: a recoil reaching the thermostat or fixed layer.
 compute         keb outer reduce max c_ke
 thermo_style    custom step time dt temp etotal c_nvac c_kesum c_keb f_th f_es
@@ -183,7 +194,10 @@ jump            SELF after_checkpoint
 # ---------------------------------------------------------------- done
 label           done
 print           "1.0" file progress.txt screen no
-write_dump      all custom final.dump id type x y z ix iy iz modify sort id format float %.17g
+# Positions to 1e-6 A (upload 7.2 -> 3.8 MB gzipped; checkpoints keep %.17g). Rounding can flip a
+# Wigner-Seitz assignment only for an atom within ~1e-6 A of a cell boundary: measured ~3e-5 per
+# result (1e-4 A would be ~3e-3, and V6 would reject those valid results). physics_settings.md.
+write_dump      all custom final.dump id type x y z ix iy iz modify sort id format float %.6f
 print           """
 md_steps $(step)
 simulated_time_ps $(time)
